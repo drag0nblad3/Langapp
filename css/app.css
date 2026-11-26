@@ -272,3 +272,10 @@ b.good, b.ok, b.hard { padding: 1px 6px; border-radius: 6px; }
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* extra practice */
+.session-card .more { margin-top: 10px; }
+.session-card .done-msg + .btn { margin-top: 14px; }
+.session-card .btn.wide + .btn.wide, .more-row .btn + .btn { margin-top: 10px; }
+.more-row { width: 100%; margin: 8px 0 14px; }
+.btn.grade small:empty, .btn small:empty { display: none; }

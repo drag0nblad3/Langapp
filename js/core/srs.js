@@ -124,6 +124,12 @@ function graduate(c, g, now) {
   return c;
 }
 
+/** Estimated chance of recalling a card right now (0 for cards still in learning). */
+export function recall(card, now = Date.now()) {
+  if (card.state !== 'review' || !card.s) return 0;
+  return retrievability(Math.max(0, (now - card.last) / DAY), card.s);
+}
+
 /** Human-readable time until due, for preview on buttons. */
 export function describeInterval(card, rating, now = Date.now()) {
   const c = review({ ...card }, rating, now);
