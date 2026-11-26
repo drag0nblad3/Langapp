@@ -1,5 +1,5 @@
 import * as S from './store.js';
-import { Rating, describeInterval } from './srs.js';
+import { Rating, describeInterval as describeIntervalFor } from './srs.js';
 import { speak, listen, record, similarity, languageVoices, setVoice, setSpeechLang, recognitionAvailable, ttsAvailable } from './speech.js';
 import {
   initContent, PACK, LETTER_GROUPS, LETTER_BY_UNIT, CONFUSE, WORDS, WORD_BY_ID, GRAMMAR_BY_ID,
@@ -24,6 +24,7 @@ const ICON = {
   stop: '<rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor"/>',
   you: '<path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 20a8 8 0 0 1 16 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
   plus: '<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
+  refresh: '<path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
   check: '<path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>',
   x: '<path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
   back: '<path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
@@ -85,7 +86,7 @@ function startClock() { if (!activeSince) activeSince = Date.now(); }
 function stopClock() { if (activeSince) { S.addTime(Date.now() - activeSince); activeSince = null; } }
 document.addEventListener('visibilitychange', () => { if (document.hidden) stopClock(); else if (studying()) startClock(); });
 setInterval(() => { if (activeSince) { stopClock(); startClock(); } }, 30000);
-const studying = () => /^#\/(session|read\/)/.test(location.hash);
+const studying = () => /^#\/(session|practice|read\/)/.test(location.hash);
 
 // ---------------------------------------------------------------- router
 
@@ -96,6 +97,7 @@ const routes = [
   [/^#\/progress$/, viewProgress, 'progress'],
   [/^#\/settings$/, viewSettings, 'settings'],
   [/^#\/session$/, viewSession, null],
+  [/^#\/practice$/, viewPractice, null],
 ];
 
 let cleanup = null;
@@ -141,6 +143,7 @@ function viewToday() {
   const rec = S.recommendedStory();
   const fresh = !Object.keys(S.state.cards).length;
   const anything = pending + newLeft > 0;
+  const canPractice = S.practiceCount() > 0;
 
   app.innerHTML = `
     <header class="top">
@@ -167,7 +170,9 @@ function viewToday() {
       </div>
       ${anything
         ? `<a class="btn primary big" href="#/session">${fresh ? 'Start your first lesson' : pending ? 'Start session' : 'Learn something new'}</a>`
-        : `<p class="done-msg">${icon('check', 18)} All caught up for today. ${S.forecastTomorrow()} reviews tomorrow.</p>`}
+        : `<p class="done-msg">${icon('check', 18)} All caught up for today. ${S.forecastTomorrow()} reviews tomorrow.</p>
+           ${moreButtons()}`}
+      ${anything && canPractice ? `<a class="btn ghost wide more" href="#/practice">${icon('refresh', 18)} Extra practice</a>` : ''}
     </section>
 
     ${rec && wordsKnown >= 5 ? `<a class="card story-rec" href="#/read/${rec.story.id}">
@@ -211,27 +216,42 @@ function viewSession() {
 }
 
 function sessionFrame(inner, { label = '' } = {}) {
-  const due = S.dueCounts();
-  const left = due.learn + due.review + (S.pickNew() ? S.newBudget() : 0);
-  const total = session.done + left;
+  let left; let total;
+  if (session.practice) {
+    left = session.queue.length;
+    total = session.done + left;
+  } else {
+    const due = S.dueCounts();
+    left = due.learn + due.review + (S.pickNew() ? S.newBudget() : 0);
+    total = session.done + left;
+  }
   const pct = total ? Math.round((session.done / total) * 100) : 100;
   app.innerHTML = `
     <div class="session">
       <div class="session-top">
-        <a class="icon-btn" href="#/today" aria-label="End session">${icon('x')}</a>
+        <a class="icon-btn" href="#/today" aria-label="${session.practice ? 'End practice' : 'End session'}">${icon('x')}</a>
         <div class="bar"><i style="width:${pct}%"></i></div>
         <span class="left">${left}</span>
       </div>
-      ${label ? `<p class="kind">${label}</p>` : ''}
+      ${label ? `<p class="kind">${session.practice ? 'Practice · ' : ''}${label}</p>` : ''}
       <div class="stage">${inner}</div>
     </div>`;
 }
 
 function nextInSession() {
+  if (session.practice) {
+    let id;
+    while ((id = session.queue.shift()) && !S.state.cards[id]);
+    if (!id) return practiceDone();
+    return showCard(S.state.cards[id]);
+  }
   const next = S.nextItem(session);
   if (!next) return sessionDone();
   if (next.teach) return showTeach(next.teach);
-  const c = next.card;
+  showCard(next.card);
+}
+
+function showCard(c) {
   const kind = S.cardKind(c.id);
   if (kind === 'letter') return showLetter(c);
   if (kind === 'recognize') return showRecognize(c);
@@ -244,10 +264,28 @@ function nextInSession() {
 }
 
 function finishCard(id, rating) {
+  if (session.practice) return finishPractice(id, rating);
   S.answer(id, rating);
   session.lastId = id;
   session.done += 1;
   session.sinceNew += 1;
+  nextInSession();
+}
+
+function finishPractice(id, rating) {
+  if (!session.missed) session.missed = new Set();
+  if (!session.misses) session.misses = {};
+  if (rating === Rating.Again && (session.misses[id] || 0) < 2) {
+    // Bring a miss back a few cards later (at most twice), so a round always ends.
+    session.misses[id] = (session.misses[id] || 0) + 1;
+    session.queue.splice(Math.min(3, session.queue.length), 0, id);
+    session.missed.add(id);
+  } else {
+    if (rating !== Rating.Again && !session.missed.has(id)) session.right += 1;
+    session.done += 1;
+  }
+  S.notePractice(id);
+  session.lastId = id;
   nextInSession();
 }
 
@@ -263,6 +301,51 @@ function sessionDone() {
         <p class="muted">${session.done} cards this session · ${d.reviews} today · ${Math.round(d.ms / 60000)} min</p>
         ${rec && rec.coverage >= 0.5 ? `<p>Now read something you mostly understand:</p>
           <a class="card story-rec" href="#/read/${rec.story.id}"><div class="story-row"><div><h2 class="tl">${lineHTML(rec.story.titleTokens)}</h2><p class="muted">${esc(rec.story.en)}</p></div>${coverageBadge(rec.coverage)}</div></a>` : ''}
+        <div class="more-row">${moreButtons()}</div>
+        <a class="btn primary big" href="#/today">Done</a>
+      </div>
+    </div>`;
+}
+
+/** "Keep going" options once the daily queue is empty. */
+function moreButtons() {
+  const out = [];
+  if (S.practiceCount()) out.push(`<a class="btn wide" href="#/practice">${icon('refresh', 18)} Practice what you know</a>`);
+  if (S.pickNew()) out.push(`<button class="btn wide" data-action="learnmore">${icon('plus', 18)} Learn ${MORE_NEW} more</button>`);
+  return out.join('');
+}
+const MORE_NEW = 5;
+
+// --- extra practice: drill known cards without changing their schedule
+
+function viewPractice() {
+  const queue = S.practiceQueue();
+  if (!queue.length) { location.hash = '#/today'; return; }
+  session = { practice: true, queue, total: queue.length, lastId: null, sinceNew: 0, done: 0, right: 0, startedAt: Date.now() };
+  nextInSession();
+  const onKey = (e) => {
+    if (e.key !== 'Enter' || e.target.tagName === 'INPUT') return;
+    const b = $('[data-default]');
+    if (b) { e.preventDefault(); b.click(); }
+  };
+  document.addEventListener('keydown', onKey);
+  return () => document.removeEventListener('keydown', onKey);
+}
+
+function practiceDone() {
+  stopClock(); startClock();
+  const d = S.today();
+  app.innerHTML = `
+    <div class="session done">
+      <div class="stage center">
+        <div class="seal">${icon('check', 44)}</div>
+        <h1>Practice round done</h1>
+        <p class="muted">${session.right} of ${session.total} right first time · ${Math.round(d.ms / 60000)} min today</p>
+        <p class="muted small">Practice doesn't change when cards are due, so your schedule stays on track.</p>
+        <div class="more-row">
+          <button class="btn wide" data-action="practiceagain">${icon('refresh', 18)} Another round</button>
+          ${S.pickNew() ? `<button class="btn wide" data-action="learnmore">${icon('plus', 18)} Learn ${MORE_NEW} more</button>` : ''}
+        </div>
         <a class="btn primary big" href="#/today">Done</a>
       </div>
     </div>`;
@@ -342,6 +425,7 @@ function checkLetter(form) {
 
 function resultScreen({ id, ok, given, right, extra = '' }) {
   const card = S.state.cards[id];
+  const describeInterval = session.practice ? () => '' : describeIntervalFor;
   const stage = $('.stage');
   stage.innerHTML = `
     <div class="result ${ok ? 'ok' : 'bad'}">
@@ -377,6 +461,7 @@ function showRecognize(c) {
 
 function gradeButtons(id) {
   const c = S.state.cards[id];
+  const describeInterval = session.practice ? () => '' : describeIntervalFor;
   const b = (r, label, cls = '') => `<button class="btn grade ${cls}" ${r === Rating.Good ? 'data-default' : ''} data-action="rate" data-id="${esc(id)}" data-r="${r}">${label}<small>${describeInterval(c, r)}</small></button>`;
   return `<div class="actions grades">
     ${b(Rating.Again, 'Forgot', 'again')}${b(Rating.Hard, 'Hard')}${b(Rating.Good, 'Got it', 'primary')}${b(Rating.Easy, 'Easy')}
@@ -770,6 +855,11 @@ const actions = {
   },
   reveal: (el) => reveal(el.dataset.id),
   rate: (el) => finishCard(el.dataset.id, Number(el.dataset.r)),
+  learnmore: () => {
+    S.addExtraNew(MORE_NEW);
+    if (location.hash === '#/session') route(); else location.hash = '#/session';
+  },
+  practiceagain: () => route(),
   tok: (el) => {
     const s = STORY_BY_ID[el.dataset.s];
     showTokenSheet(s.parsed[+el.dataset.l].tokens[+el.dataset.t]);

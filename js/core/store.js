@@ -1,5 +1,5 @@
 // Saved progress (on this device) and the daily study queue.
-import { newCard, review, dayKey, Rating, MIN } from './srs.js';
+import { newCard, review, recall, dayKey, Rating, MIN } from './srs.js';
 import { LETTERS, WORDS, WORD_BY_ID, STORY_LIST, wordUnits } from './content.js';
 
 // Progress is saved per language: hibi-ja, hibi-es, …
@@ -120,7 +120,16 @@ function nextWord() {
 }
 
 export function newBudget() {
-  return Math.max(0, state.settings.newPerDay - today().newCount);
+  const d = today();
+  return Math.max(0, state.settings.newPerDay + (d.extraNew || 0) - d.newCount);
+}
+
+/** Raise today's new-item limit, e.g. "learn 5 more" after the daily lesson. */
+export function addExtraNew(n) {
+  const d = today();
+  // Top up from what has actually been taught, so unused extras don't stack.
+  d.extraNew = Math.max(0, d.newCount - state.settings.newPerDay) + n;
+  save();
 }
 
 /** Choose the next thing to teach, alternating kana and words when both are available. */
@@ -178,6 +187,35 @@ export function nextItem(session, now = Date.now()) {
   return null;
 }
 
+// ---- extra practice ------------------------------------------------------
+// Practice rounds quiz cards you already know without touching their schedule,
+// so you can study as much as you like and FSRS intervals stay accurate.
+
+const practicedAt = {}; // card id -> last time practised (this app run only)
+
+/** Cards to drill in a practice round: weakest first, recently practised last. */
+export function practiceQueue(size = 15, now = Date.now()) {
+  const pool = Object.values(state.cards).filter((c) => c.reps > 0 || c.state === 'review');
+  const score = (c) => recall(c, now) + (practicedAt[c.id] ? 1 + practicedAt[c.id] / now : 0);
+  const pick = pool.sort((a, b) => score(a) - score(b)).slice(0, size);
+  // Shuffle so a round doesn't always run in the same order.
+  for (let i = pick.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pick[i], pick[j]] = [pick[j], pick[i]];
+  }
+  return pick.map((c) => c.id);
+}
+
+export function practiceCount() {
+  return Object.values(state.cards).filter((c) => c.reps > 0 || c.state === 'review').length;
+}
+
+export function notePractice(id) {
+  practicedAt[id] = Date.now();
+  today().practiced = (today().practiced || 0) + 1;
+  save();
+}
+
 /** Reviews due by the end of tomorrow. */
 export function forecastTomorrow() {
   const end = Date.now() + 24 * 60 * MIN;
@@ -185,7 +223,7 @@ export function forecastTomorrow() {
 }
 
 export function streak() {
-  const active = (k) => { const d = state.days[k]; return d && (d.reviews > 0 || d.read > 0); };
+  const active = (k) => { const d = state.days[k]; return d && (d.reviews > 0 || d.read > 0 || d.practiced > 0); };
   let n = 0;
   const t = new Date();
   const key = (d) => dayKey(d.getTime());
