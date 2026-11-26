@@ -1,0 +1,182 @@
+// Graded reading. Tokens are separated by spaces.
+//   漢字[よみ]   furigana
+//   word=id      look up a specific dictionary entry (e.g. が=ga-but, けん=name)
+//   word="gloss" inline meaning for one-off words
+// Each line: [japanese, english, speaker?]
+
+export const STORIES = [
+  {
+    id: 's1', title: 'はじめまして', en: 'Nice to meet you',
+    grammar: [
+      ['A は B です', 'A is B. は (read "wa") marks the topic: what the sentence is about.'],
+      ['じゃありません', 'The negative of です: "is not".'],
+      ['…か', 'Add か at the end to make a question.'],
+      ['も', '"Also/too". It replaces は: けんさんも = Ken too.'],
+    ],
+    lines: [
+      ['はじめまして 。', 'Nice to meet you.', 'けん'],
+      ['わたし は けん=name です 。', 'I am Ken.', 'けん'],
+      ['学生[がくせい] です 。', 'I\'m a student.', 'けん'],
+      ['よろしくおねがいします 。', 'Pleased to meet you.', 'けん'],
+      ['はじめまして 。 わたし は ゆき=name です 。', 'Nice to meet you. I\'m Yuki.', 'ゆき'],
+      ['わたし は 先生[せんせい] です 。', 'I\'m a teacher.', 'ゆき'],
+      ['けん=name さん も 日本人[にほんじん] です か 。', 'Are you Japanese too, Ken?', 'ゆき'],
+      ['いいえ 、 日本人[にほんじん] じゃありません 。', 'No, I\'m not Japanese.', 'けん'],
+      ['アメリカ 人[じん]="person (from a country)" です 。', 'I\'m American.', 'けん'],
+    ],
+  },
+  {
+    id: 's2', title: 'これ は なん です か', en: 'What is this?',
+    grammar: [
+      ['これ / それ / あれ', 'this (near me) / that (near you) / that (over there).'],
+      ['A の B', 'A\'s B. わたしの本 = my book. だれの = whose.'],
+      ['…よ / …ね', 'よ tells someone something new. ね looks for agreement.'],
+    ],
+    lines: [
+      ['これ は なん です か 。', 'What is this?', 'けん'],
+      ['それ は 本[ほん] です 。', 'That is a book.', 'ゆき'],
+      ['だれ の 本[ほん] です か 。', 'Whose book is it?', 'けん'],
+      ['わたし の 本[ほん] です 。', 'It\'s my book.', 'ゆき'],
+      ['あれ も ゆき=name さん の です か 。', 'Is that one over there yours too?', 'けん'],
+      ['いいえ 、 あれ は けん=name さん の かさ です よ 。', 'No, that\'s your umbrella, Ken.', 'ゆき'],
+      ['あ 、 そうですね 。 ありがとうございます 。', 'Oh, so it is. Thank you.', 'けん'],
+    ],
+  },
+  {
+    id: 's3', title: 'すき な たべもの', en: 'Favourite foods',
+    grammar: [
+      ['A が すき です', 'I like A. Literally "A is liked". The thing you like takes が.'],
+      ['A を たべます', 'Eat A. を (read "o") marks the object.'],
+      ['とても', '"Very", placed before an adjective.'],
+    ],
+    lines: [
+      ['わたし は すし が すき です 。', 'I like sushi.'],
+      ['ラーメン も すき です 。', 'I like ramen too.'],
+      ['でも 、 なっとう は すき じゃありません 。', 'But I don\'t like natto.'],
+      ['ゆき=name さん は なっとう が だいすき です 。', 'Yuki loves natto.'],
+      ['ゆき=name さん は まいにち なっとう を たべます 。', 'Yuki eats natto every day.'],
+      ['わたし は まいにち ラーメン を たべます 。', 'I eat ramen every day.'],
+      ['ラーメン は おいしい です ね 。', 'Ramen is tasty, isn\'t it?', 'ゆき'],
+      ['はい 、 とても おいしい です ！', 'Yes, it\'s very tasty!', 'けん'],
+    ],
+  },
+  {
+    id: 's4', title: 'あさ', en: 'Morning',
+    grammar: [
+      ['…ます', 'The polite form of a verb: たべる → たべます. It covers present and future.'],
+      ['time に', 'に marks a point in time: 六時に = at six o\'clock.'],
+      ['place で', 'で marks where an action happens: 学校で = at school.'],
+    ],
+    lines: [
+      ['わたし は まいあさ 六時[ろくじ]="six o\'clock" に おきます 。', 'I get up at six every morning.'],
+      ['コーヒー を のみます 。', 'I drink coffee.'],
+      ['パン を たべます 。', 'I eat bread.'],
+      ['それから 、 しんぶん を よみます 。', 'Then I read the newspaper.'],
+      ['八時[はちじ]="eight o\'clock" に 学校[がっこう] に いきます 。', 'At eight I go to school.'],
+      ['学校[がっこう] で 日本語[にほんご] を べんきょうします 。', 'At school I study Japanese.'],
+      ['日本語[にほんご] は たのしい です 。', 'Japanese is fun.'],
+    ],
+  },
+  {
+    id: 's5', title: 'しゅうまつ', en: 'The weekend',
+    grammar: [
+      ['…ました', 'Past polite: いきます → いきました (went).'],
+      ['います / いました', 'There is / there was, for living things.'],
+      ['でした', 'Past of です: "was".'],
+    ],
+    lines: [
+      ['どようび に ともだち と こうえん へ いきました 。', 'On Saturday I went to the park with a friend.'],
+      ['こうえん は とても おおきい です 。', 'The park is very big.'],
+      ['いぬ が たくさん いました 。', 'There were lots of dogs.'],
+      ['わたしたち は おべんとう を たべました 。', 'We ate bento lunches.'],
+      ['ともだち は しゃしん を とりました 。', 'My friend took photos.'],
+      ['にちようび は うち で やすみました 。', 'On Sunday I rested at home.'],
+      ['たのしい しゅうまつ でした 。', 'It was a fun weekend.'],
+    ],
+  },
+  {
+    id: 's6', title: 'かいもの', en: 'Shopping',
+    grammar: [
+      ['いくら ですか', 'How much is it?'],
+      ['A を ください', 'Please give me A. The を is often dropped in speech.'],
+      ['ひとつ, ふたつ, みっつ', 'Counting things: one, two, three.'],
+    ],
+    lines: [
+      ['いらっしゃいませ 。', 'Welcome!', 'てんいん'],
+      ['すみません 、 この りんご は いくら です か 。', 'Excuse me, how much is this apple?', 'けん'],
+      ['一[ひと]つ 百円[ひゃくえん]="100 yen" です 。', 'It\'s 100 yen each.', 'てんいん'],
+      ['じゃあ 、 三[みっ]つ ください 。', 'Well then, three please.', 'けん'],
+      ['三百円[さんびゃくえん]="300 yen" です 。', 'That\'s 300 yen.', 'てんいん'],
+      ['はい 、 どうぞ 。', 'Here you go.', 'けん'],
+      ['ありがとうございました 。', 'Thank you very much.', 'てんいん'],
+    ],
+  },
+  {
+    id: 's7', title: 'わたし の へや', en: 'My room',
+    grammar: [
+      ['place に thing が あります', 'There is a thing in a place. Use あります for objects.'],
+      ['place に animal が います', 'Use います for people and animals.'],
+      ['A の うえ / A の した', 'On top of A / under A.'],
+      ['…ですが、…', 'が after です means "but".'],
+    ],
+    lines: [
+      ['これ は わたし の へや です 。', 'This is my room.'],
+      ['へや に つくえ と いす が あります 。', 'In the room there is a desk and a chair.'],
+      ['つくえ の うえ に パソコン が あります 。', 'On the desk there is a computer.'],
+      ['ベッド の した に ねこ が います 。', 'Under the bed there is a cat.'],
+      ['ねこ の なまえ は ミケ="Mike (a classic cat name)" です 。', 'The cat\'s name is Mike.'],
+      ['ミケ="Mike (the cat)" は よく ねます 。', 'Mike sleeps a lot.'],
+      ['ちいさい へや です が=ga-but 、 わたし は すき です 。', 'It\'s a small room, but I like it.'],
+    ],
+  },
+  {
+    id: 's8', title: '日本[にほん] へ いきたい', en: 'I want to go to Japan',
+    grammar: [
+      ['verb + たい', 'Want to do: たべます → たべたい (want to eat). Drop ます, add たい.'],
+      ['にも', 'に + も: "to … also".'],
+      ['だから', '"So, therefore", at the start of a sentence.'],
+    ],
+    lines: [
+      ['わたし は 日本[にほん] へ いきたい です 。', 'I want to go to Japan.'],
+      ['東京[とうきょう]="Tokyo" で おいしい すし を たべたい です 。', 'In Tokyo I want to eat delicious sushi.'],
+      ['京都[きょうと]="Kyoto" で ふるい おてら を みたい です 。', 'In Kyoto I want to see old temples.'],
+      ['富士山[ふじさん]="Mt. Fuji" に も のぼりたい です 。', 'I also want to climb Mt. Fuji.'],
+      ['だから 、 まいにち 日本語[にほんご] を べんきょうします 。', 'So I study Japanese every day.'],
+      ['日本語[にほんご] は むずかしい です が=ga-but 、 おもしろい です 。', 'Japanese is difficult, but interesting.'],
+    ],
+  },
+  {
+    id: 's9', title: 'てんき', en: 'The weather',
+    grammar: [
+      ['…かった です', 'Past of an い-adjective: さむい → さむかったです (was cold).'],
+      ['でしょう', '"Probably": used in weather forecasts.'],
+      ['…ましょう', '"Let\'s …": します → しましょう.'],
+    ],
+    lines: [
+      ['きのう は あめ でした 。', 'Yesterday it rained.'],
+      ['とても さむかった です 。', 'It was very cold.'],
+      ['きょう は いい てんき です 。', 'Today the weather is nice.'],
+      ['そら が あおい です 。', 'The sky is blue.'],
+      ['あした も はれ でしょう 。', 'Tomorrow will probably be sunny too.'],
+      ['こうえん で さんぽ を しましょう 。', 'Let\'s take a walk in the park.'],
+    ],
+  },
+  {
+    id: 's10', title: 'わたし の かぞく', en: 'My family',
+    grammar: [
+      ['A が じょうず です', 'Be good at A.'],
+      ['A が へた です', 'Be bad at A.'],
+      ['ちち / はは / あに', 'Words for your own family. Other people\'s families use different words.'],
+    ],
+    lines: [
+      ['わたし の かぞく は 四人[よにん]="four people" です 。', 'There are four people in my family.'],
+      ['ちち と はは と あに と わたし です 。', 'My father, my mother, my older brother and me.'],
+      ['ちち は かいしゃいん です 。', 'My father is an office worker.'],
+      ['はは は いしゃ です 。', 'My mother is a doctor.'],
+      ['あに は だいがくせい です 。', 'My brother is a university student.'],
+      ['あに は サッカー が じょうず です 。', 'My brother is good at soccer.'],
+      ['わたし は サッカー が へた です 。', 'I\'m bad at soccer.'],
+      ['でも 、 わたし は りょうり が じょうず です よ 。', 'But I\'m good at cooking!'],
+    ],
+  },
+];
