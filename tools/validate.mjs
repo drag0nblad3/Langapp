@@ -82,7 +82,7 @@ for (const s of C.STORY_LIST) {
   // the vocab position that covers 90% of its word tokens.
   const positions = s.parsed.flatMap((l) => l.tokens).filter((t) => t.kind === 'word').map((t) => wordIndex[t.id] + 1).sort((x, y) => x - y);
   const readableAt = positions.length ? positions[Math.ceil(positions.length * 0.9) - 1] : 0;
-  report.push({ id: s.id, title: s.title.replace(/\s+/g, ''), lines: s.parsed.length, newWords: [...newHere], readableAt, glosses });
+  report.push({ id: s.id, title: s.titleTokens.map((t) => t.plain).join(pack.usesSpaces ? ' ' : ''), lines: s.parsed.length, newWords: [...newHere], readableAt, glosses });
   for (const id of newHere) known.add(id);
 }
 for (const w of C.WORDS) if (!usedWords.has(w.id)) warn(`Word "${w.id}" isn't used in any story yet (it will have no example sentence)`);

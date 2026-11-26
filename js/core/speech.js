@@ -28,7 +28,9 @@ export function speak(text, { rate = 0.9 } = {}) {
     u.lang = lang;
     u.rate = rate;
     loadVoices();
-    const v = voices.find((x) => x.name === chosen) || voices.find((x) => x.localService) || voices[0];
+    const exact = (x) => x.lang.replace('_', '-').toLowerCase() === lang.toLowerCase();
+    const v = voices.find((x) => x.name === chosen) || voices.find((x) => exact(x) && x.localService)
+      || voices.find(exact) || voices.find((x) => x.localService) || voices[0];
     if (v) u.voice = v;
     u.onend = resolve;
     u.onerror = resolve;

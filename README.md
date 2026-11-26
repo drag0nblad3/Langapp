@@ -1,8 +1,10 @@
-# Hibi 日々 — learn Japanese day by day
+# Hibi 日々 — learn a language day by day
 
-A free, offline-capable web app for learning Japanese from zero, built for Android (Chrome) and installable to the home screen. No account, no API key: all progress is stored on the device.
+A free, offline-capable web app for learning Japanese (from zero) and Spanish (beginner), built for Android (Chrome) and installable to the home screen. No account, no API key: all progress is stored on the device.
 
 ## What's inside
+
+Switch languages in **Settings**. Each language keeps its own progress.
 
 - **Kana course**: hiragana, then katakana, taught one character at a time. You type the reading (active recall), with notes on tricky sounds and look-alike characters.
 - **Spaced repetition**: FSRS scheduling (the algorithm used by modern Anki) with short learning steps, aiming for 90% recall.
@@ -37,7 +39,7 @@ python3 -m http.server 8000
 There's no AI API. Instead, open a Claude Code session on this repo and ask for a new content pack (words + stories), ideally attaching a backup exported from **Settings → Export backup** so the material matches what you know. See [CONTENT.md](CONTENT.md) for the format and rules. Check content with:
 
 ```sh
-node tools/validate.mjs ja                          # check all content
+node tools/validate.mjs ja                          # check all content (or: es)
 node tools/validate.mjs ja --progress backup.json   # coverage for a learner
 node tools/validate.mjs ja --update-lock            # record ids after adding content
 ```
@@ -53,6 +55,7 @@ js/core/                      language-neutral app
   content.js                    content model and token markup parser
   speech.js                     TTS, speech recognition, recording
 js/langs/index.js             registry of language packs
+js/langs/es/                  Spanish pack (01-basics: ~130 words, 10 stories)
 js/langs/ja/                  Japanese pack
   index.js                      settings, input method, UI strings, content list
   kana.js, romaji.js            kana course, romaji ⇄ kana

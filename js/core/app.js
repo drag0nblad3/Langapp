@@ -145,7 +145,7 @@ function viewToday() {
   app.innerHTML = `
     <header class="top">
       <div>
-        <p class="eyebrow">${new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+        <p class="eyebrow">${new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}${Object.keys(LANGUAGES).length > 1 ? ` · <a href="#/settings" class="lang-link">${esc(PACK.name)}</a>` : ''}</p>
         <h1 class="tl">${fresh ? PACK.ui.welcome : PACK.ui.greeting(new Date().getHours())}</h1>
       </div>
       <div class="streak ${streak ? 'lit' : ''}" title="Day streak">${icon('flame', 22)}<b>${streak}</b></div>
@@ -445,7 +445,7 @@ function checkProduce(form) {
   resultScreen({
     id, ok, given,
     right: `${wordHTML(w)} <span class="muted">${esc(romanize(w.reading))}</span>`,
-    extra: `<p class="muted small">${esc(w.en)}</p>`,
+    extra: `<p class="muted small">${esc(w.en)}</p>${(() => { const n = PACK.input.note?.(raw, w, ok); return n ? `<p class="note">${esc(n)}</p>` : ''; })()}`,
   });
 }
 
@@ -547,7 +547,7 @@ function showTokenSheet(t) {
         ${romanHTML(t.reading)}
       </div>
       <p class="meaning">${esc(t.formGloss || w.en)}</p>
-      ${t.form ? `<p class="muted small">Form of ${wordHTML(w)}: ${esc(w.en)}</p>` : `<p class="muted small">${esc(w.pos)}</p>`}
+      ${t.form && t.formGloss !== w.en ? `<p class="muted small">Form of ${wordHTML(w)}: ${esc(w.en)}</p>` : `<p class="muted small">${t.form ? `${wordHTML(w)} · ` : ''}${esc(w.pos)}</p>`}
       ${learned
         ? `<p class="muted small">${icon('check', 14)} In your deck</p>`
         : S.wordEligible(w)

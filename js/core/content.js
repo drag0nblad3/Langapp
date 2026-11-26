@@ -44,6 +44,7 @@ function splitTokens(line) {
  *   base[reading]   ruby text (furigana, pinyin, …)
  *   word=id         link to a specific dictionary entry (word or grammar id, or "name")
  *   word="gloss"    one-off meaning, not tracked as vocabulary
+ *   two_words       a multi-word phrase as one token (shown with a space)
  */
 export function parseToken(raw) {
   let s = raw;
@@ -54,6 +55,12 @@ export function parseToken(raw) {
   const im = !gloss && s.match(/=([\w-]+)$/);
   if (im) { id = im[1]; s = s.slice(0, im.index); }
   const ruby = parseRuby(s);
+  // "_" joins a multi-word phrase into one token: buenos_días → "buenos días"
+  if (ruby.plain.includes('_')) {
+    ruby.plain = ruby.plain.replace(/_/g, ' ');
+    ruby.reading = ruby.reading.replace(/_/g, ' ');
+    ruby.segments = ruby.segments.map((x) => ({ ...x, t: x.t.replace(/_/g, ' '), r: x.r && x.r.replace(/_/g, ' ') }));
+  }
   const tok = { raw, ...ruby, gloss };
   if (PACK.punctuation.test(ruby.plain)) { tok.kind = 'punct'; return tok; }
   if (gloss) { tok.kind = 'gloss'; return tok; }

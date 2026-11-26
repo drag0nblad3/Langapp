@@ -15,7 +15,9 @@ Hibi has no AI built in. New words and stories are written in a Claude Code sess
 - **Add new content as a new pack file** (`js/langs/<lang>/content/NN-topic.js`) and append it to `content` in `js/langs/<lang>/index.js`. Don't grow old packs, except to fix mistakes.
 - **Every story token must resolve** to a word, a conjugated `form` of a word, a grammar entry, `=name`, or an inline `="gloss"`. Keep one-off glosses rare: if a word is useful, add it to the vocab.
 - **Comprehensible input**: a story should be ≥90% known once the learner has started the words that come before it in vocab order. The validator prints "90% known after N words". Introduce only a few new words per story, and reuse earlier words often.
-- **Accuracy**: natural, standard language at the learner's level. Translations should be faithful, not literal word salad. Japanese: polite です/ます style at beginner level, furigana on every kanji, katakana for loanwords, readings in kana only.
+- **Accuracy**: natural, standard language at the learner's level. Translations should be faithful, not literal word salad.
+  - Japanese: polite です/ます style at beginner level, furigana on every kanji, katakana for loanwords, readings in kana only.
+  - Spanish: Latin American usage (ustedes, not vosotros; pesos). Nouns are stored with their article (`el libro`) and list their bare and plural shapes in `forms`. Every conjugated verb or inflected adjective in a story must appear in that word's `forms`. Mark nouns that take either article (`el/la estudiante`) with `anyGender: true`.
 - **Vocab order is teaching order.** A word only unlocks once its letters (kana) are learned, so the order mostly matters among words that are already unlocked. Put high-frequency words first.
 - Before committing: `node tools/validate.mjs <lang>` must pass. Then run it again with `--update-lock` to record the new ids. With a learner backup: `node tools/validate.mjs ja --progress path/to/backup.json`.
 
@@ -64,6 +66,7 @@ Tokens are separated by spaces. Spaces are not shown for languages written witho
 | `が=ga-but` | force a specific dictionary entry when the same text has two meanings |
 | `けん=name` | a person's name |
 | `六時[ろくじ]="six o'clock"` | one-off meaning, not tracked as vocabulary |
+| `buenos_días` | a multi-word phrase as one token (shown with a space); matches vocab text `buenos días` |
 | `。 、 ？ ！` | punctuation (the pack's `punctuation` regex) |
 
 Forms keys may use ruby markup or plain kana: both the written form and the reading are indexed.
@@ -80,7 +83,7 @@ js/langs/<code>/
   (helpers)           e.g. Japanese has romaji.js and kana.js
 ```
 
-Copy `js/langs/ja/index.js` and adapt it:
+Copy an existing pack and adapt it. `js/langs/es/index.js` is the simplest model for a Latin-alphabet language, `js/langs/ja/index.js` for one with its own script:
 
 - `speechLang`: BCP-47 tag for text-to-speech and speech recognition (`es-ES`, `ko-KR`, `zh-CN`, …).
 - `font`: CSS font stack for the target language.
@@ -89,6 +92,7 @@ Copy `js/langs/ja/index.js` and adapt it:
 - `letters`: optional alphabet stage taught before words (`{ name, groups, confuse, units(reading) }`). Leave it out (`letters: null`) for languages using the Latin alphabet. Words are then unlocked from day one.
 - `romanize(reading)`: optional romanisation shown under words. Omit for Latin-script languages.
 - `input`: how typed answers work. `convert(raw, final, word)` turns keystrokes into target text (romaji → kana; identity for Spanish). `normalize(s)` decides what counts as equal (e.g. ignore accents or case). `hint(word)` and `placeholder` are the instructions shown.
+- `input.note(raw, word, ok)` (optional): feedback on an accepted but imperfect answer (Spanish uses it for accents and gender).
 - `ui`: greeting, welcome word, session-complete stamp, intro sentence, voice test phrase, and help text for installing a voice.
 
 Then register it in `js/langs/index.js`. A language picker appears in Settings once there are two or more, and each language keeps separate progress.
