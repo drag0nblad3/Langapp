@@ -1,0 +1,150 @@
+// Language-neutral content model. Call initContent(pack) once before using anything else.
+// Pure module (no DOM), so tools/validate.mjs can use it in Node.
+
+export let PACK = null;
+export let WORDS = [];
+export let WORD_BY_ID = {};
+export let GRAMMAR_BY_ID = {};
+export let STORY_LIST = [];
+export let STORY_BY_ID = {};
+export let LETTER_GROUPS = [];
+export let LETTERS = []; // flat, in teaching order: { kana, answers, script, group, first }
+export let LETTER_BY_UNIT = {};
+export let CONFUSE = {};
+
+let rubyRe = null;
+let INDEX = new Map();
+let EXAMPLE = {};
+
+/** 学生[がくせい] → { plain: '学生', reading: 'がくせい', segments: [{t:'学生', r:'がくせい'}] } */
+export function parseRuby(markup) {
+  const segments = [];
+  let last = 0;
+  let m;
+  rubyRe.lastIndex = 0;
+  while ((m = rubyRe.exec(markup))) {
+    if (m.index > last) segments.push({ t: markup.slice(last, m.index) });
+    segments.push({ t: m[1], r: m[2] });
+    last = m.index + m[0].length;
+  }
+  if (last < markup.length) segments.push({ t: markup.slice(last) });
+  return {
+    plain: segments.map((s) => s.t).join(''),
+    reading: segments.map((s) => s.r || s.t).join(''),
+    segments,
+  };
+}
+
+function splitTokens(line) {
+  return line.match(/(?:[^\s"]+|"[^"]*")+/g) || [];
+}
+
+/**
+ * Token markup:
+ *   base[reading]   ruby text (furigana, pinyin, …)
+ *   word=id         link to a specific dictionary entry (word or grammar id, or "name")
+ *   word="gloss"    one-off meaning, not tracked as vocabulary
+ */
+export function parseToken(raw) {
+  let s = raw;
+  let gloss = null;
+  let id = null;
+  const gm = s.match(/="([^"]*)"$/);
+  if (gm) { gloss = gm[1]; s = s.slice(0, gm.index); }
+  const im = !gloss && s.match(/=([\w-]+)$/);
+  if (im) { id = im[1]; s = s.slice(0, im.index); }
+  const ruby = parseRuby(s);
+  const tok = { raw, ...ruby, gloss };
+  if (PACK.punctuation.test(ruby.plain)) { tok.kind = 'punct'; return tok; }
+  if (gloss) { tok.kind = 'gloss'; return tok; }
+  if (id === 'name') { tok.kind = 'name'; return tok; }
+  if (id) {
+    if (WORD_BY_ID[id]) Object.assign(tok, { kind: 'word', id });
+    else if (GRAMMAR_BY_ID[id]) Object.assign(tok, { kind: 'grammar', id });
+    else tok.kind = 'unknown';
+    return tok;
+  }
+  const hit = INDEX.get(ruby.plain) || INDEX.get(ruby.reading) || INDEX.get(ruby.plain.toLowerCase());
+  if (hit) Object.assign(tok, hit);
+  else tok.kind = 'unknown';
+  return tok;
+}
+
+export function parseLine(line) {
+  return splitTokens(line).map(parseToken);
+}
+
+export function initContent(pack) {
+  PACK = pack;
+  rubyRe = new RegExp(`(${pack.rubyBase || '[^\\s\\[\\]]'}+)\\[([^\\]]+)\\]`, 'g');
+
+  const vocab = pack.content.flatMap((c) => (c.vocab || []).map((v) => ({ ...v, pack: c.id })));
+  const grammar = pack.content.flatMap((c) => c.grammar || []);
+  const stories = pack.content.flatMap((c) => (c.stories || []).map((s) => ({ ...s, pack: c.id })));
+
+  WORDS = vocab.map((v) => {
+    const r = parseRuby(v.text);
+    return { ...v, plain: r.plain, reading: r.reading, segments: r.segments, hasRuby: r.plain !== r.reading };
+  });
+  WORD_BY_ID = Object.fromEntries(WORDS.map((w) => [w.id, w]));
+  GRAMMAR_BY_ID = Object.fromEntries(grammar.map((g) => [g.id, g]));
+
+  INDEX = new Map();
+  for (const g of grammar) if (g.text && !INDEX.has(g.text)) INDEX.set(g.text, { kind: 'grammar', id: g.id });
+  for (const w of WORDS) {
+    INDEX.set(w.reading, { kind: 'word', id: w.id });
+    INDEX.set(w.plain, { kind: 'word', id: w.id });
+    if (pack.usesSpaces) INDEX.set(w.plain.toLowerCase(), { kind: 'word', id: w.id });
+    for (const [key, formGloss] of Object.entries(w.forms || {})) {
+      const f = parseRuby(key);
+      const entry = { kind: 'word', id: w.id, form: f.plain, formGloss };
+      INDEX.set(f.plain, entry);
+      INDEX.set(f.reading, entry);
+      if (pack.usesSpaces) INDEX.set(f.plain.toLowerCase(), entry);
+    }
+  }
+
+  LETTER_GROUPS = pack.letters?.groups || [];
+  LETTERS = [];
+  for (const g of LETTER_GROUPS) {
+    g.items.forEach((it, idx) => LETTERS.push({ ...it, script: g.script, group: g.id, first: idx === 0 }));
+  }
+  LETTER_BY_UNIT = Object.fromEntries(LETTERS.map((k) => [k.unit, k]));
+  CONFUSE = pack.letters?.confuse || {};
+
+  STORY_LIST = stories.map((s) => ({
+    ...s,
+    titleTokens: parseLine(s.title),
+    parsed: s.lines.map(([text, en, who]) => {
+      const tokens = parseLine(text);
+      return {
+        tokens,
+        en,
+        who,
+        text: tokens.map((t) => t.plain).join(pack.usesSpaces ? ' ' : '').replace(/ ([.,!?;:])/g, '$1'),
+        reading: tokens.map((t) => t.reading).join(pack.usesSpaces ? ' ' : ''),
+      };
+    }),
+  }));
+  STORY_BY_ID = Object.fromEntries(STORY_LIST.map((s) => [s.id, s]));
+
+  EXAMPLE = {};
+  for (const s of STORY_LIST) {
+    s.parsed.forEach((l, i) => {
+      for (const t of l.tokens) if (t.kind === 'word' && !EXAMPLE[t.id]) EXAMPLE[t.id] = { story: s.id, line: i };
+    });
+  }
+}
+
+/** First story sentence containing a word, for context on flashcards. */
+export function exampleFor(wordId) {
+  const e = EXAMPLE[wordId];
+  return e ? STORY_BY_ID[e.story].parsed[e.line] : null;
+}
+
+/** Letter units a word needs before it unlocks (empty if the language has no letter stage). */
+export function wordUnits(word) {
+  return PACK.letters ? PACK.letters.units(word.reading) : [];
+}
+
+export const romanize = (s) => (PACK.romanize ? PACK.romanize(s) : '');

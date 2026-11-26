@@ -1,8 +1,9 @@
 // Saved progress (on this device) and the daily study queue.
 import { newCard, review, dayKey, Rating, MIN } from './srs.js';
-import { KANA_LIST, WORDS, WORD_BY_ID, STORY_LIST, wordUnits } from './content.js';
+import { LETTERS, WORDS, WORD_BY_ID, STORY_LIST, wordUnits } from './content.js';
 
-const KEY = 'hibi-v1';
+// Progress is saved per language: hibi-ja, hibi-es, …
+let KEY = null;
 
 const DEFAULT_SETTINGS = {
   newPerDay: 12,
@@ -18,7 +19,19 @@ function blank() {
   return { v: 1, cards: {}, settings: { ...DEFAULT_SETTINGS }, days: {}, lastNewKind: 'word', stories: {}, created: Date.now() };
 }
 
-export let state = load();
+export let state = blank();
+
+export function initStore(langCode) {
+  KEY = `hibi-${langCode}`;
+  try {
+    // Early versions saved Japanese progress under 'hibi-v1'.
+    if (langCode === 'ja' && !localStorage.getItem(KEY) && localStorage.getItem('hibi-v1')) {
+      localStorage.setItem(KEY, localStorage.getItem('hibi-v1'));
+      localStorage.removeItem('hibi-v1');
+    }
+  } catch (e) { /* storage unavailable */ }
+  state = load();
+}
 
 function load() {
   try {
@@ -54,18 +67,18 @@ export function addTime(ms) {
 // ---- card helpers -------------------------------------------------------
 
 export function cardKind(id) {
-  return { k: 'kana', r: 'recognize', p: 'produce', s: 'sentence' }[id[0]];
+  return { k: 'letter', r: 'recognize', p: 'produce', s: 'sentence' }[id[0]];
 }
-export const kanaCardId = (kana) => `k:${kana}`;
+export const letterCardId = (kana) => `k:${kana}`;
 export const recogId = (wordId) => `r:${wordId}`;
 export const prodId = (wordId) => `p:${wordId}`;
 export const sentenceId = (storyId, line) => `s:${storyId}:${line}`;
 
-export function isKnownKana(kana) { return !!state.cards[kanaCardId(kana)]; }
+export function isKnownLetter(kana) { return !!state.cards[letterCardId(kana)]; }
 export function isLearnedWord(wordId) { return !!state.cards[recogId(wordId)]; }
 
 export function wordEligible(word) {
-  return wordUnits(word).every(isKnownKana);
+  return wordUnits(word).every(isKnownLetter);
 }
 
 /** Start learning an item: it enters the first learning step. */
@@ -99,8 +112,8 @@ export function answer(id, rating) {
 
 // ---- new items ---------------------------------------------------------
 
-function nextKana() {
-  return KANA_LIST.find((k) => !state.cards[kanaCardId(k.kana)]) || null;
+function nextLetter() {
+  return LETTERS.find((k) => !state.cards[letterCardId(k.unit)]) || null;
 }
 function nextWord() {
   return WORDS.find((w) => !state.cards[recogId(w.id)] && wordEligible(w)) || null;
@@ -112,17 +125,17 @@ export function newBudget() {
 
 /** Choose the next thing to teach, alternating kana and words when both are available. */
 export function pickNew() {
-  const k = nextKana();
+  const k = nextLetter();
   const w = nextWord();
-  if (k && w) return state.lastNewKind === 'kana' ? { kind: 'word', item: w } : { kind: 'kana', item: k };
+  if (k && w) return state.lastNewKind === 'letter' ? { kind: 'word', item: w } : { kind: 'letter', item: k };
   if (w) return { kind: 'word', item: w };
-  if (k) return { kind: 'kana', item: k };
+  if (k) return { kind: 'letter', item: k };
   return null;
 }
 
 export function teach(pick) {
   state.lastNewKind = pick.kind;
-  const id = pick.kind === 'kana' ? kanaCardId(pick.item.kana) : recogId(pick.item.id);
+  const id = pick.kind === 'letter' ? letterCardId(pick.item.unit) : recogId(pick.item.id);
   return introduce(id);
 }
 

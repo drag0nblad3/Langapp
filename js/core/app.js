@@ -1,16 +1,18 @@
 import * as S from './store.js';
 import { Rating, describeInterval } from './srs.js';
-import { speak, listen, record, similarity, japaneseVoices, setVoice, recognitionAvailable, ttsAvailable } from './speech.js';
-import { toHiragana, toRomaji, normalizeKana, hiraToKata, isKatakana } from './romaji.js';
-import { KANA_GROUPS, KANA_BY_CHAR, CONFUSE } from './data/kana.js';
-import { WORDS, WORD_BY_ID, GRAMMAR_BY_ID, STORY_LIST, STORY_BY_ID, exampleFor, wordUnits } from './content.js';
+import { speak, listen, record, similarity, languageVoices, setVoice, setSpeechLang, recognitionAvailable, ttsAvailable } from './speech.js';
+import {
+  initContent, PACK, LETTER_GROUPS, LETTER_BY_UNIT, CONFUSE, WORDS, WORD_BY_ID, GRAMMAR_BY_ID,
+  STORY_LIST, STORY_BY_ID, exampleFor, wordUnits, romanize,
+} from './content.js';
+import { LANGUAGES, DEFAULT_LANGUAGE } from '../langs/index.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const app = $('#app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const cfg = () => S.state.settings;
-
-setVoice(cfg().voice);
+const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+const romanHTML = (reading) => { const r = romanize(reading); return r ? `<p class="roman">${esc(r)}</p>` : ''; };
 
 // ---------------------------------------------------------------- icons
 
@@ -47,12 +49,21 @@ function tokenClass(t) {
   return `tok ${t.kind}`;
 }
 
+// No space before closing punctuation or after opening punctuation.
+const NO_SPACE_BEFORE = /^[.,!?;:%)\]」』。、？！…]/;
+const NO_SPACE_AFTER = /[¡¿(\[「『]$/;
 function lineHTML(tokens, attrs = (j) => '') {
-  return tokens.map((t, j) => `<span class="${tokenClass(t)}" ${attrs(j)}>${rubyHTML(t.segments)}</span>`).join(cfg().spacing ? '<span class="sp"> </span>' : '');
+  const gap = PACK.usesSpaces ? ' ' : cfg().spacing ? '<span class="sp"> </span>' : '';
+  return tokens.map((t, j) => {
+    const html = `<span class="${tokenClass(t)}" ${attrs(j)}>${rubyHTML(t.segments)}</span>`;
+    const prev = tokens[j - 1];
+    const sep = j && gap && !NO_SPACE_BEFORE.test(t.plain) && !NO_SPACE_AFTER.test(prev.plain) ? gap : '';
+    return sep + html;
+  }).join('');
 }
 
 function wordHTML(w, big = false) {
-  return `<span class="jp ${big ? 'jp-big' : ''}">${rubyHTML(w.segments)}</span>`;
+  return `<span class="tl ${big ? 'tl-big' : ''}">${rubyHTML(w.segments)}</span>`;
 }
 
 function sayWord(w) { return speak(w.plain, { rate: cfg().rate }); }
@@ -123,8 +134,8 @@ function viewToday() {
   const goal = cfg().goalMinutes;
   const pct = Math.min(100, Math.round((minutes / goal) * 100));
   const streak = S.streak();
-  const kanaKnown = Object.keys(S.state.cards).filter((id) => id.startsWith('k:')).length;
-  const kanaTotal = Object.keys(KANA_BY_CHAR).length;
+  const lettersKnown = Object.keys(S.state.cards).filter((id) => id.startsWith('k:')).length;
+  const lettersTotal = Object.keys(LETTER_BY_UNIT).length;
   const wordsKnown = WORDS.filter((w) => S.isLearnedWord(w.id)).length;
   const sentences = Object.keys(S.state.cards).filter((id) => id.startsWith('s:')).length;
   const rec = S.recommendedStory();
@@ -135,13 +146,13 @@ function viewToday() {
     <header class="top">
       <div>
         <p class="eyebrow">${new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</p>
-        <h1>${fresh ? 'ようこそ' : greeting()}</h1>
+        <h1 class="tl">${fresh ? PACK.ui.welcome : PACK.ui.greeting(new Date().getHours())}</h1>
       </div>
       <div class="streak ${streak ? 'lit' : ''}" title="Day streak">${icon('flame', 22)}<b>${streak}</b></div>
     </header>
 
     ${fresh ? `<section class="card intro">
-      <p>Welcome to <b>Hibi</b> (日々, "day by day"). You'll start with <b>hiragana</b>, the basic Japanese alphabet. Words unlock as you learn the letters they use, and short stories unlock as you learn the words.</p>
+      <p>Welcome to <b>Hibi</b> (日々, "day by day"). ${PACK.ui.intro}</p>
       <p class="muted">About 15 minutes a day. Turn your sound on.</p>
     </section>` : ''}
 
@@ -162,27 +173,19 @@ function viewToday() {
     ${rec && wordsKnown >= 5 ? `<a class="card story-rec" href="#/read/${rec.story.id}">
       <p class="eyebrow">Read next</p>
       <div class="story-row">
-        <div><h2 class="jp">${lineHTML(rec.story.titleTokens)}</h2><p class="muted">${esc(rec.story.en)}</p></div>
+        <div><h2 class="tl">${lineHTML(rec.story.titleTokens)}</h2><p class="muted">${esc(rec.story.en)}</p></div>
         ${coverageBadge(rec.coverage)}
       </div>
     </a>` : ''}
 
     <section class="stats">
-      <div class="stat"><b>${kanaKnown}<small>/${kanaTotal}</small></b><span>kana</span></div>
+      ${lettersTotal ? `<div class="stat"><b>${lettersKnown}<small>/${lettersTotal}</small></b><span>${esc(PACK.letters.name)}</span></div>` : ''}
       <div class="stat"><b>${wordsKnown}<small>/${WORDS.length}</small></b><span>words</span></div>
       <div class="stat"><b>${sentences}</b><span>sentences saved</span></div>
     </section>
 
     ${installPrompt ? `<button class="btn ghost wide" data-action="install">Install Hibi on your home screen</button>` : ''}
   `;
-}
-
-function greeting() {
-  const h = new Date().getHours();
-  if (h < 5) return 'こんばんは';
-  if (h < 11) return 'おはよう';
-  if (h < 18) return 'こんにちは';
-  return 'こんばんは';
 }
 
 function coverageBadge(c) {
@@ -230,7 +233,7 @@ function nextInSession() {
   if (next.teach) return showTeach(next.teach);
   const c = next.card;
   const kind = S.cardKind(c.id);
-  if (kind === 'kana') return showKana(c);
+  if (kind === 'letter') return showLetter(c);
   if (kind === 'recognize') return showRecognize(c);
   if (kind === 'produce') return showProduce(c);
   if (kind === 'sentence') return showSentence(c);
@@ -255,11 +258,11 @@ function sessionDone() {
   app.innerHTML = `
     <div class="session done">
       <div class="stage center">
-        <div class="seal">よし！</div>
+        <div class="seal">${esc(PACK.ui.sessionDone)}</div>
         <h1>Session complete</h1>
         <p class="muted">${session.done} cards this session · ${d.reviews} today · ${Math.round(d.ms / 60000)} min</p>
         ${rec && rec.coverage >= 0.5 ? `<p>Now read something you mostly understand:</p>
-          <a class="card story-rec" href="#/read/${rec.story.id}"><div class="story-row"><div><h2 class="jp">${lineHTML(rec.story.titleTokens)}</h2><p class="muted">${esc(rec.story.en)}</p></div>${coverageBadge(rec.coverage)}</div></a>` : ''}
+          <a class="card story-rec" href="#/read/${rec.story.id}"><div class="story-row"><div><h2 class="tl">${lineHTML(rec.story.titleTokens)}</h2><p class="muted">${esc(rec.story.en)}</p></div>${coverageBadge(rec.coverage)}</div></a>` : ''}
         <a class="btn primary big" href="#/today">Done</a>
       </div>
     </div>`;
@@ -269,22 +272,22 @@ function sessionDone() {
 
 function showTeach(pick) {
   session.sinceNew = 0;
-  if (pick.kind === 'kana') {
+  if (pick.kind === 'letter') {
     const k = pick.item;
-    const group = KANA_GROUPS.find((g) => g.id === k.group);
-    const confuse = (CONFUSE[k.kana] || []).filter(S.isKnownKana);
+    const group = LETTER_GROUPS.find((g) => g.id === k.group);
+    const confuse = (CONFUSE[k.unit] || []).filter(S.isKnownLetter);
     sessionFrame(`
       <div class="teach">
         <p class="badge">New ${group.script}</p>
         ${k.first && group.note ? `<p class="note">${esc(group.note)}</p>` : ''}
-        <button class="kana-big" data-action="say" data-text="${esc(k.kana)}">${esc(k.kana)}</button>
-        <p class="romaji">${esc(k.answers[0])}</p>
-        ${confuse.length ? `<p class="muted small">Don't mix it up with ${confuse.map((c) => `<span class="jp">${c}</span> (${KANA_BY_CHAR[c].answers[0]})`).join(', ')}.</p>` : ''}
+        <button class="letter-big" data-action="say" data-text="${esc(k.unit)}">${esc(k.unit)}</button>
+        <p class="roman">${esc(k.answers[0])}</p>
+        ${confuse.length ? `<p class="muted small">Don't mix it up with ${confuse.map((c) => `<span class="tl">${c}</span> (${LETTER_BY_UNIT[c].answers[0]})`).join(', ')}.</p>` : ''}
         <p class="muted small">Tap the character to hear it. Say it out loud.</p>
       </div>
-      <div class="actions"><button class="btn primary big" data-default data-action="taught" data-kind="kana" data-id="${esc(k.kana)}">Got it</button></div>
+      <div class="actions"><button class="btn primary big" data-default data-action="taught" data-kind="letter" data-id="${esc(k.unit)}">Got it</button></div>
     `, { label: `${group.name} · new` });
-    if (cfg().autoplay) speak(k.kana, { rate: cfg().rate });
+    if (cfg().autoplay) speak(k.unit, { rate: cfg().rate });
     return;
   }
   const w = pick.item;
@@ -293,7 +296,7 @@ function showTeach(pick) {
     <div class="teach">
       <p class="badge">New word</p>
       <button class="word-big" data-action="sayword" data-id="${w.id}">${wordHTML(w, true)}</button>
-      <p class="romaji">${esc(toRomaji(w.reading))}</p>
+      ${romanHTML(w.reading)}
       <p class="meaning">${esc(w.en)}</p>
       <p class="muted small">${esc(w.pos)}${w.hint ? ` · ${esc(w.hint)}` : ''}</p>
       ${ex ? exampleHTML(ex) : ''}
@@ -306,35 +309,35 @@ function showTeach(pick) {
 function exampleHTML(ex) {
   return `<div class="example">
     <button class="icon-btn sm" data-action="say" data-text="${esc(ex.text)}" aria-label="Play">${icon('play', 16)}</button>
-    <div><p class="jp">${lineHTML(ex.tokens)}</p><p class="muted small">${esc(ex.en)}</p></div>
+    <div><p class="tl">${lineHTML(ex.tokens)}</p><p class="muted small">${esc(ex.en)}</p></div>
   </div>`;
 }
 
-// --- kana card (type the reading)
+// --- letter card (type the reading)
 
-function showKana(c) {
+function showLetter(c) {
   const kana = c.id.slice(2);
-  const k = KANA_BY_CHAR[kana];
+  const k = LETTER_BY_UNIT[kana];
   if (!k) { delete S.state.cards[c.id]; S.save(); return nextInSession(); }
   sessionFrame(`
-    <form class="quiz" data-action="checkKana" data-id="${esc(c.id)}">
-      <div class="kana-big static">${esc(kana)}</div>
-      <input class="answer" name="a" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="type the reading in romaji" aria-label="Reading">
+    <form class="quiz" data-action="checkLetter" data-id="${esc(c.id)}">
+      <div class="letter-big static">${esc(kana)}</div>
+      <input class="answer" name="a" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="type the reading${PACK.romanName ? ` in ${PACK.romanName}` : ''}" aria-label="Reading">
       <div class="actions"><button class="btn primary big" type="submit">Check</button></div>
     </form>
-  `, { label: k.script === 'hiragana' ? 'Hiragana' : 'Katakana' });
+  `, { label: cap(k.script || PACK.letters.name) });
   focusAnswer();
 }
 
-function checkKana(form) {
+function checkLetter(form) {
   const id = form.dataset.id;
   const kana = id.slice(2);
-  const k = KANA_BY_CHAR[kana];
+  const k = LETTER_BY_UNIT[kana];
   const given = form.a.value.trim().toLowerCase();
   if (!given) return;
   const ok = k.answers.includes(given);
   speak(kana, { rate: cfg().rate });
-  resultScreen({ id, ok, given, right: `<span class="kana-mid jp">${esc(kana)}</span> = <b>${esc(k.answers[0])}</b>${k.answers.length > 1 ? ` <span class="muted">(also ${k.answers.slice(1).join(', ')})</span>` : ''}` });
+  resultScreen({ id, ok, given, right: `<span class="letter-mid tl">${esc(kana)}</span> = <b>${esc(k.answers[0])}</b>${k.answers.length > 1 ? ` <span class="muted">(also ${k.answers.slice(1).join(', ')})</span>` : ''}` });
 }
 
 function resultScreen({ id, ok, given, right, extra = '' }) {
@@ -389,7 +392,7 @@ function reveal(id) {
     stage.innerHTML = `
       <div class="flash">
         <button class="word-big" data-action="sayword" data-id="${w.id}">${wordHTML(w, true)}</button>
-        <p class="romaji">${esc(toRomaji(w.reading))}</p>
+        ${romanHTML(w.reading)}
         <p class="meaning">${esc(w.en)}</p>
         ${ex ? exampleHTML(ex) : ''}
       </div>
@@ -399,7 +402,7 @@ function reveal(id) {
     const line = STORY_BY_ID[sid].parsed[+li];
     stage.innerHTML = `
       <div class="flash">
-        <p class="sentence jp">${lineHTML(line.tokens)}</p>
+        <p class="sentence tl">${lineHTML(line.tokens)}</p>
         <p class="meaning">${esc(line.en)}</p>
         <button class="btn ghost" data-action="say" data-text="${esc(line.text)}">${icon('play', 16)} Play again</button>
       </div>
@@ -407,29 +410,27 @@ function reveal(id) {
   }
 }
 
-// --- word production (English → type Japanese)
+// --- word production (English → type it in the target language)
 
 function showProduce(c) {
   const w = WORD_BY_ID[c.id.slice(2)];
   if (!w) { delete S.state.cards[c.id]; S.save(); return nextInSession(); }
-  const kata = isKatakana(w.reading);
   sessionFrame(`
     <form class="quiz" data-action="checkProduce" data-id="${esc(c.id)}">
       <p class="prompt">${esc(w.en)}</p>
       ${w.hint ? `<p class="muted small">${esc(w.hint)}</p>` : ''}
-      <p class="muted small">Say it in Japanese${kata ? ' (a katakana word)' : ''}. Type romaji. It turns into kana.</p>
-      <input class="answer" name="a" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="romaji" data-kata="${kata ? 1 : ''}" data-live="1" aria-label="Answer">
-      <p class="preview jp" aria-live="polite">&nbsp;</p>
+      <p class="muted small">${esc(PACK.input.hint(w))}</p>
+      <input class="answer" name="a" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="${esc(PACK.input.placeholder)}" data-word="${w.id}" data-live="1" aria-label="Answer">
+      <p class="preview tl" aria-live="polite">&nbsp;</p>
       <div class="actions"><button class="btn primary big" type="submit">Check</button></div>
     </form>
   `, { label: 'Word · say it' });
   focusAnswer();
 }
 
-function liveKana(input) {
-  let k = toHiragana(input.value, false);
-  if (input.dataset.kata) k = hiraToKata(k);
-  input.form.querySelector('.preview').innerHTML = esc(k) || '&nbsp;';
+function livePreview(input) {
+  const shown = PACK.input.convert(input.value, false, WORD_BY_ID[input.dataset.word]);
+  input.form.querySelector('.preview').innerHTML = shown && shown !== input.value ? esc(shown) : '&nbsp;';
 }
 
 function checkProduce(form) {
@@ -437,13 +438,13 @@ function checkProduce(form) {
   const w = WORD_BY_ID[id.slice(2)];
   const raw = form.a.value.trim();
   if (!raw) return;
-  let given = toHiragana(raw, true);
-  if (form.a.dataset.kata) given = hiraToKata(given);
-  const ok = normalizeKana(given) === normalizeKana(w.reading) || raw === w.plain;
+  const given = PACK.input.convert(raw, true, w);
+  const norm = PACK.input.normalize;
+  const ok = norm(given) === norm(w.reading) || norm(raw) === norm(w.plain);
   sayWord(w);
   resultScreen({
     id, ok, given,
-    right: `${wordHTML(w)} <span class="muted">${esc(toRomaji(w.reading))}</span>`,
+    right: `${wordHTML(w)} <span class="muted">${esc(romanize(w.reading))}</span>`,
     extra: `<p class="muted small">${esc(w.en)}</p>`,
   });
 }
@@ -456,7 +457,7 @@ function showSentence(c) {
   if (!line) { delete S.state.cards[c.id]; S.save(); return nextInSession(); }
   sessionFrame(`
     <div class="flash">
-      <p class="sentence jp">${lineHTML(line.tokens)}</p>
+      <p class="sentence tl">${lineHTML(line.tokens)}</p>
       <button class="btn ghost" data-action="say" data-text="${esc(line.text)}">${icon('play', 16)} Listen</button>
       <p class="muted small">Do you understand it?</p>
     </div>
@@ -479,7 +480,7 @@ function viewStories() {
       ${STORY_LIST.map((s, i) => `
         <a class="card story-item" href="#/read/${s.id}">
           <span class="num">${i + 1}</span>
-          <div class="grow"><h2 class="jp">${lineHTML(s.titleTokens)}</h2><p class="muted">${esc(s.en)}</p></div>
+          <div class="grow"><h2 class="tl">${lineHTML(s.titleTokens)}</h2><p class="muted">${esc(s.en)}</p></div>
           ${S.state.stories[s.id] ? `<span class="read-mark" title="Read">${icon('check', 18)}</span>` : ''}
           ${coverageBadge(S.storyCoverage(s))}
         </a>`).join('')}
@@ -497,23 +498,23 @@ function viewReader(id) {
   app.innerHTML = `
     <header class="top reader-top">
       <a class="icon-btn" href="#/read" aria-label="Back">${icon('back')}</a>
-      <div class="grow"><h1 class="jp">${lineHTML(s.titleTokens)}</h1><p class="muted">${esc(s.en)}</p></div>
+      <div class="grow"><h1 class="tl">${lineHTML(s.titleTokens)}</h1><p class="muted">${esc(s.en)}</p></div>
       ${coverageBadge(cov)}
     </header>
     <div class="reader-tools">
       <button class="btn ghost sm" data-action="playall" data-id="${s.id}">${icon('ear', 16)} Listen to all</button>
-      <button class="btn ghost sm" data-action="toggle" data-key="furigana">${cfg().furigana ? 'Hide' : 'Show'} furigana</button>
+      ${PACK.rubyBase ? `<button class="btn ghost sm" data-action="toggle" data-key="furigana">${cfg().furigana ? 'Hide' : 'Show'} ${esc(PACK.rubyName)}</button>` : ''}
       <button class="btn ghost sm" data-action="toggleEN">${icon('eye', 16)} English</button>
     </div>
     ${s.grammar?.length ? `<details class="card grammar"><summary>Grammar in this story</summary>
-      <dl>${s.grammar.map(([a, b]) => `<dt class="jp">${esc(a)}</dt><dd>${esc(b)}</dd>`).join('')}</dl>
+      <dl>${s.grammar.map(([a, b]) => `<dt class="tl">${esc(a)}</dt><dd>${esc(b)}</dd>`).join('')}</dl>
     </details>` : ''}
     <div class="lines">
       ${s.parsed.map((l, i) => {
         const saved = !!S.state.cards[S.sentenceId(s.id, i)];
         return `<div class="line" id="line-${i}">
-          ${l.who ? `<span class="who jp">${esc(l.who)}</span>` : ''}
-          <p class="jp text">${lineHTML(l.tokens, (j) => `data-action="tok" data-s="${s.id}" data-l="${i}" data-t="${j}"`)}</p>
+          ${l.who ? `<span class="who tl">${esc(l.who)}</span>` : ''}
+          <p class="tl text">${lineHTML(l.tokens, (j) => `data-action="tok" data-s="${s.id}" data-l="${i}" data-t="${j}"`)}</p>
           <p class="en muted">${esc(l.en)}</p>
           <div class="line-tools">
             <button class="icon-btn sm" data-action="sayline" data-s="${s.id}" data-l="${i}" aria-label="Play">${icon('play', 16)}</button>
@@ -543,7 +544,7 @@ function showTokenSheet(t) {
     body = `
       <div class="sheet-head">
         <button class="word-big sm" data-action="say" data-text="${esc(t.plain)}">${rubyHTML(t.segments, true)}</button>
-        <p class="romaji">${esc(toRomaji(t.reading))}</p>
+        ${romanHTML(t.reading)}
       </div>
       <p class="meaning">${esc(t.formGloss || w.en)}</p>
       ${t.form ? `<p class="muted small">Form of ${wordHTML(w)}: ${esc(w.en)}</p>` : `<p class="muted small">${esc(w.pos)}</p>`}
@@ -551,19 +552,19 @@ function showTokenSheet(t) {
         ? `<p class="muted small">${icon('check', 14)} In your deck</p>`
         : S.wordEligible(w)
           ? `<button class="btn primary wide" data-action="learn" data-id="${w.id}">${icon('plus', 16)} Add to my deck</button>`
-          : `<p class="muted small">This word unlocks after you learn the kana: ${wordUnits(w).filter((u) => !S.isKnownKana(u)).map(esc).join(' ')}</p>
+          : `<p class="muted small">This word unlocks after you learn the ${esc(PACK.letters?.name || 'letters')}: ${wordUnits(w).filter((u) => !S.isKnownLetter(u)).map(esc).join(' ')}</p>
              <button class="btn wide" data-action="learn" data-id="${w.id}">Add it anyway</button>`}`;
   } else if (t.kind === 'grammar') {
     const g = GRAMMAR_BY_ID[t.id];
     body = `
-      <div class="sheet-head"><button class="word-big sm" data-action="say" data-text="${esc(t.plain)}">${esc(t.plain)}</button><p class="romaji">${esc(g.romaji)}</p></div>
+      <div class="sheet-head"><button class="word-big sm" data-action="say" data-text="${esc(t.plain)}">${esc(t.plain)}</button>${g.roman ? `<p class="roman">${esc(g.roman)}</p>` : ''}</div>
       <p class="meaning">${esc(g.en)}</p>
       ${g.note ? `<p class="muted">${esc(g.note)}</p>` : ''}
       <p class="badge">grammar</p>`;
   } else if (t.kind === 'name') {
-    body = `<div class="sheet-head"><button class="word-big sm" data-action="say" data-text="${esc(t.plain)}">${esc(t.plain)}</button><p class="romaji">${esc(toRomaji(t.reading))}</p></div><p class="meaning">a name</p>`;
+    body = `<div class="sheet-head"><button class="word-big sm" data-action="say" data-text="${esc(t.plain)}">${esc(t.plain)}</button>${romanHTML(t.reading)}</div><p class="meaning">a name</p>`;
   } else if (t.kind === 'gloss') {
-    body = `<div class="sheet-head"><button class="word-big sm" data-action="say" data-text="${esc(t.plain)}">${rubyHTML(t.segments, true)}</button><p class="romaji">${esc(toRomaji(t.reading))}</p></div><p class="meaning">${esc(t.gloss)}</p>`;
+    body = `<div class="sheet-head"><button class="word-big sm" data-action="say" data-text="${esc(t.plain)}">${rubyHTML(t.segments, true)}</button>${romanHTML(t.reading)}</div><p class="meaning">${esc(t.gloss)}</p>`;
   } else return;
   openSheet(body);
   speak(t.plain, { rate: cfg().rate });
@@ -635,7 +636,7 @@ async function checkPronunciation(btn) {
       if (sc > best.score) best = { score: sc, text: a };
     }
     const p = Math.round(best.score * 100);
-    out.innerHTML = `Heard: <span class="jp">${esc(best.text)}</span> · <b class="${p >= 85 ? 'good' : p >= 60 ? 'ok' : 'hard'}">${p}% match</b>`;
+    out.innerHTML = `Heard: <span class="tl">${esc(best.text)}</span> · <b class="${p >= 85 ? 'good' : p >= 60 ? 'ok' : 'hard'}">${p}% match</b>`;
   } catch (e) {
     out.textContent = `Speech check unavailable (${e.message}).`;
   } finally {
@@ -647,22 +648,22 @@ async function checkPronunciation(btn) {
 
 function viewProgress() {
   const chip = (kana) => {
-    const st = S.strength(S.state.cards[S.kanaCardId(kana)]);
-    return `<button class="kchip ${st}" data-action="say" data-text="${esc(kana)}">${esc(kana)}<small>${esc(KANA_BY_CHAR[kana].answers[0])}</small></button>`;
+    const st = S.strength(S.state.cards[S.letterCardId(kana)]);
+    return `<button class="kchip ${st}" data-action="say" data-text="${esc(kana)}">${esc(kana)}<small>${esc(LETTER_BY_UNIT[kana].answers[0])}</small></button>`;
   };
-  const script = (name) => KANA_GROUPS.filter((g) => g.script === name)
-    .map((g) => `<div class="krow">${g.items.map((it) => chip(it.kana)).join('')}</div>`).join('');
+  const scripts = [...new Set(LETTER_GROUPS.map((g) => g.script))];
+  const script = (name) => LETTER_GROUPS.filter((g) => g.script === name)
+    .map((g) => `<div class="krow">${g.items.map((it) => chip(it.unit)).join('')}</div>`).join('');
   const words = WORDS.map((w) => {
     const rs = S.strength(S.state.cards[S.recogId(w.id)]);
     const locked = rs === 'none' && !S.wordEligible(w);
     return `<li class="word-row ${rs} ${locked ? 'locked' : ''}" data-action="sayword" data-id="${w.id}">
-      <span class="jp">${rubyHTML(w.segments)}</span><span class="muted grow">${esc(w.en)}</span><i class="dot"></i></li>`;
+      <span class="tl">${rubyHTML(w.segments)}</span><span class="muted grow">${esc(w.en)}</span><i class="dot"></i></li>`;
   }).join('');
   app.innerHTML = `
     <header class="top"><div><p class="eyebrow">Your progress</p><h1>Progress</h1></div></header>
     <div class="legend"><span><i class="dot learning"></i>learning</span><span><i class="dot review"></i>learned</span><span><i class="dot strong"></i>strong (3+ weeks)</span></div>
-    <details class="card" open><summary>Hiragana</summary><div class="kgrid">${script('hiragana')}</div></details>
-    <details class="card"><summary>Katakana</summary><div class="kgrid">${script('katakana')}</div></details>
+    ${scripts.map((sc, i) => `<details class="card" ${i === 0 ? 'open' : ''}><summary>${esc(cap(sc || PACK.letters.name))}</summary><div class="kgrid">${script(sc)}</div></details>`).join('')}
     <details class="card" open><summary>Words</summary><ul class="words">${words}</ul></details>`;
 }
 
@@ -670,28 +671,34 @@ function viewProgress() {
 
 function viewSettings() {
   const s = cfg();
-  const voices = japaneseVoices();
+  const voices = languageVoices();
+  const langs = Object.entries(LANGUAGES);
   app.innerHTML = `
     <header class="top"><div><p class="eyebrow">Hibi</p><h1>Settings</h1></div></header>
+    ${langs.length > 1 ? `<section class="card form">
+      <label class="field"><span>Language</span>
+        <select data-action="language">${langs.map(([code, l]) => `<option value="${code}" ${code === PACK.code ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}</select></label>
+      <p class="muted small">Each language keeps its own progress.</p>
+    </section>` : ''}
     <section class="card form">
       <label class="field"><span>New items per day</span>
         <input type="number" min="0" max="50" value="${s.newPerDay}" data-setting="newPerDay"></label>
       <label class="field"><span>Daily goal (minutes)</span>
         <input type="number" min="5" max="120" step="5" value="${s.goalMinutes}" data-setting="goalMinutes"></label>
       <label class="field switch"><span>Play audio automatically</span><input type="checkbox" ${s.autoplay ? 'checked' : ''} data-setting="autoplay"></label>
-      <label class="field switch"><span>Show furigana over kanji</span><input type="checkbox" ${s.furigana ? 'checked' : ''} data-setting="furigana"></label>
-      <label class="field switch"><span>Space between words</span><input type="checkbox" ${s.spacing ? 'checked' : ''} data-setting="spacing"></label>
+      ${PACK.rubyBase ? `<label class="field switch"><span>Show ${esc(PACK.rubyName)}</span><input type="checkbox" ${s.furigana ? 'checked' : ''} data-setting="furigana"></label>` : ''}
+      ${PACK.usesSpaces ? '' : `<label class="field switch"><span>Space between words</span><input type="checkbox" ${s.spacing ? 'checked' : ''} data-setting="spacing"></label>`}
     </section>
 
     <section class="card form">
       <h2>Voice</h2>
       ${!ttsAvailable() ? '<p class="warn">This browser has no speech output.</p>' : voices.length ? `
-        <label class="field"><span>Japanese voice</span>
+        <label class="field"><span>${esc(PACK.name)} voice</span>
           <select data-setting="voice">${voices.map((v) => `<option value="${esc(v.name)}" ${v.name === s.voice ? 'selected' : ''}>${esc(v.name)}</option>`).join('')}</select></label>` : `
-        <p class="warn">No Japanese voice found yet. On Android, open <b>Settings → System → Languages → Text-to-speech output</b>, tap the gear next to <b>Google</b>, choose <b>Install voice data</b> and download <b>Japanese</b>. Then reopen Hibi.</p>`}
+        <p class="warn">No ${esc(PACK.name)} voice found yet. ${PACK.ui.voiceHelp}</p>`}
       <label class="field"><span>Speed <b>${s.rate.toFixed(2)}×</b></span>
         <input type="range" min="0.5" max="1.2" step="0.05" value="${s.rate}" data-setting="rate"></label>
-      <button class="btn" data-action="say" data-text="こんにちは。にほんごをべんきょうしましょう。">${icon('play', 16)} Test voice</button>
+      <button class="btn" data-action="say" data-text="${esc(PACK.ui.voiceTest)}">${icon('play', 16)} Test voice</button>
     </section>
 
     <section class="card form">
@@ -755,9 +762,9 @@ const actions = {
   say: (el) => speak(el.dataset.text, { rate: cfg().rate }),
   sayword: (el) => sayWord(WORD_BY_ID[el.dataset.id]),
   taught: (el) => {
-    if (el.dataset.kind === 'kana') S.teach({ kind: 'kana', item: KANA_BY_CHAR[el.dataset.id] });
+    if (el.dataset.kind === 'letter') S.teach({ kind: 'letter', item: LETTER_BY_UNIT[el.dataset.id] });
     else S.teach({ kind: 'word', item: WORD_BY_ID[el.dataset.id] });
-    session.lastId = el.dataset.kind === 'kana' ? S.kanaCardId(el.dataset.id) : S.recogId(el.dataset.id);
+    session.lastId = el.dataset.kind === 'letter' ? S.letterCardId(el.dataset.id) : S.recogId(el.dataset.id);
     session.done += 1;
     nextInSession();
   },
@@ -815,20 +822,41 @@ document.addEventListener('click', (e) => {
 document.addEventListener('submit', (e) => {
   const f = e.target;
   e.preventDefault();
-  if (f.dataset.action === 'checkKana') checkKana(f);
+  if (f.dataset.action === 'checkLetter') checkLetter(f);
   if (f.dataset.action === 'checkProduce') checkProduce(f);
 });
 document.addEventListener('input', (e) => {
-  if (e.target.dataset.live) liveKana(e.target);
+  if (e.target.dataset.live) livePreview(e.target);
 });
 document.addEventListener('change', (e) => {
   if (e.target.dataset.setting) onSetting(e.target);
   if (e.target.dataset.action === 'import') importData(e.target);
+  if (e.target.dataset.action === 'language') { setLanguage(e.target.value); location.hash = '#/today'; location.reload(); }
 });
 
 // ---------------------------------------------------------------- boot
 
+function currentLanguage() {
+  let code = DEFAULT_LANGUAGE;
+  try { code = localStorage.getItem('hibi-language') || code; } catch (e) { /* ignore */ }
+  return LANGUAGES[code] ? code : DEFAULT_LANGUAGE;
+}
+function setLanguage(code) {
+  try { localStorage.setItem('hibi-language', code); } catch (e) { /* ignore */ }
+}
+
+async function boot() {
+  const code = currentLanguage();
+  const pack = (await LANGUAGES[code].load()).default;
+  initContent(pack);
+  S.initStore(pack.code);
+  setSpeechLang(pack.speechLang);
+  setVoice(cfg().voice);
+  document.documentElement.style.setProperty('--tl', pack.font);
+  route();
+}
+
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
-route();
+boot();

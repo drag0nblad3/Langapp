@@ -32,18 +32,34 @@ python3 -m http.server 8000
 2. Tap **⋮ → Add to Home screen → Install**.
 3. For audio, make sure a Japanese voice is installed: **Settings → System → Languages → Text-to-speech output → Google (gear) → Install voice data → Japanese**.
 
+## Getting new content
+
+There's no AI API. Instead, open a Claude Code session on this repo and ask for a new content pack (words + stories), ideally attaching a backup exported from **Settings → Export backup** so the material matches what you know. See [CONTENT.md](CONTENT.md) for the format and rules. Check content with:
+
+```sh
+node tools/validate.mjs ja                          # check all content
+node tools/validate.mjs ja --progress backup.json   # coverage for a learner
+node tools/validate.mjs ja --update-lock            # record ids after adding content
+```
+
 ## Project layout
 
 ```
-index.html, css/app.css     UI shell and styles
-js/app.js                   views and interaction
-js/store.js                 saved progress, daily queue, unlocking
-js/srs.js                   FSRS scheduler
-js/romaji.js                romaji ⇄ kana conversion
-js/speech.js                TTS, speech recognition, recording
-js/content.js               parses content markup
-js/data/                    kana, vocabulary, stories
-sw.js, manifest.webmanifest offline support and install metadata
+index.html, css/app.css       UI shell and styles
+js/core/                      language-neutral app
+  app.js                        views and interaction
+  store.js                      saved progress (per language), daily queue, unlocking
+  srs.js                        FSRS scheduler
+  content.js                    content model and token markup parser
+  speech.js                     TTS, speech recognition, recording
+js/langs/index.js             registry of language packs
+js/langs/ja/                  Japanese pack
+  index.js                      settings, input method, UI strings, content list
+  kana.js, romaji.js            kana course, romaji ⇄ kana
+  content/01-foundations.js     first content pack
+  ids.lock.json                 published ids (protects saved progress)
+tools/validate.mjs            content checker
+sw.js, manifest.webmanifest   offline support and install metadata
 ```
 
-Story markup (`js/data/stories.js`): tokens are separated by spaces, `漢字[よみ]` adds furigana, `word=id` links to a specific dictionary entry, and `word="gloss"` gives a one-off meaning.
+To reuse the app for another language, add a pack under `js/langs/<code>/` and register it. CONTENT.md has a section on adding a language.

@@ -2,17 +2,21 @@
 
 let voices = [];
 let chosen = null;
+let lang = 'ja-JP';
+
+/** BCP-47 language tag from the language pack, e.g. 'ja-JP'. */
+export function setSpeechLang(tag) { lang = tag; loadVoices(); }
 
 function loadVoices() {
   if (!('speechSynthesis' in window)) return;
-  voices = speechSynthesis.getVoices().filter((v) => v.lang && v.lang.replace('_', '-').toLowerCase().startsWith('ja'));
+  voices = speechSynthesis.getVoices().filter((v) => v.lang && v.lang.replace('_', '-').toLowerCase().startsWith(lang.split('-')[0].toLowerCase()));
 }
 if ('speechSynthesis' in window) {
   loadVoices();
   speechSynthesis.addEventListener?.('voiceschanged', loadVoices);
 }
 
-export function japaneseVoices() { loadVoices(); return voices; }
+export function languageVoices() { loadVoices(); return voices; }
 export function setVoice(name) { chosen = name; }
 export function ttsAvailable() { return 'speechSynthesis' in window; }
 
@@ -21,7 +25,7 @@ export function speak(text, { rate = 0.9 } = {}) {
   speechSynthesis.cancel();
   return new Promise((resolve) => {
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'ja-JP';
+    u.lang = lang;
     u.rate = rate;
     loadVoices();
     const v = voices.find((x) => x.name === chosen) || voices.find((x) => x.localService) || voices[0];
@@ -37,12 +41,12 @@ export function speak(text, { rate = 0.9 } = {}) {
 const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 export function recognitionAvailable() { return !!Recognition; }
 
-/** Listen once in Japanese and resolve with the transcript ('' if nothing heard). */
+/** Listen once in the target language and resolve with the transcript ('' if nothing heard). */
 export function listen() {
   return new Promise((resolve, reject) => {
     if (!Recognition) { reject(new Error('Speech recognition is not supported in this browser.')); return; }
     const r = new Recognition();
-    r.lang = 'ja-JP';
+    r.lang = lang;
     r.interimResults = false;
     r.maxAlternatives = 3;
     let done = false;
@@ -73,9 +77,9 @@ export async function record() {
   });
 }
 
-/** Similarity 0..1 between two Japanese strings (character-level). */
+/** Similarity 0..1 between two strings (character-level, case and punctuation ignored). */
 export function similarity(a, b) {
-  const clean = (s) => s.replace(/[\s。、？！?!.,「」]/g, '');
+  const clean = (s) => s.toLowerCase().replace(/[\s。、？！?!.,¿¡「」'"-]/g, '');
   const x = [...clean(a)];
   const y = [...clean(b)];
   if (!x.length && !y.length) return 1;

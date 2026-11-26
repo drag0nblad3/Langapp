@@ -39,7 +39,7 @@ const toKata = (s) => s.replace(/[ぁ-ゖ]/g, (ch) => String.fromCharCode(ch.cha
 function parse(list) {
   return list.split(' ').map((e) => {
     const [kana, answers] = e.split(':');
-    return { kana, answers: answers.split('/') };
+    return { unit: kana, answers: answers.split('/') };
   });
 }
 
@@ -49,8 +49,8 @@ HIRA_GROUPS.forEach(([name, list, note], i) => {
 });
 HIRA_GROUPS.forEach(([name, list], i) => {
   const items = parse(list)
-    .filter((it) => !KATA_SKIP.has(it.kana))
-    .map((it) => ({ kana: toKata(it.kana), answers: it.answers }));
+    .filter((it) => !KATA_SKIP.has(it.unit))
+    .map((it) => ({ unit: toKata(it.unit), answers: it.answers }));
   KANA_GROUPS.push({ id: `k${i}`, script: 'katakana', name, note: KATA_NOTES[i], items });
 });
 KANA_GROUPS.push({ id: 'kx', script: 'katakana', name: KATA_EXTRA[0], note: KATA_EXTRA[2], items: parse(KATA_EXTRA[1]) });
@@ -60,7 +60,7 @@ export const KANA = [];
 for (const g of KANA_GROUPS) {
   g.items.forEach((it, idx) => KANA.push({ ...it, script: g.script, group: g.id, first: idx === 0 }));
 }
-export const KANA_BY_CHAR = Object.fromEntries(KANA.map((k) => [k.kana, k]));
+export const KANA_BY_CHAR = Object.fromEntries(KANA.map((k) => [k.unit, k]));
 
 // Easily confused pairs.
 const CONFUSABLE = [

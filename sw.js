@@ -1,9 +1,10 @@
-// Offline support: cache the app shell, serve it cache-first, refresh in the background.
-const VERSION = 'hibi-v1';
+// Offline support: network-first so new content shows up immediately; the cache is the offline fallback.
+const VERSION = 'hibi-v3';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
-  'js/app.js', 'js/store.js', 'js/srs.js', 'js/romaji.js', 'js/speech.js', 'js/content.js',
-  'js/data/kana.js', 'js/data/vocab.js', 'js/data/stories.js',
+  'js/core/app.js', 'js/core/store.js', 'js/core/srs.js', 'js/core/speech.js', 'js/core/content.js',
+  'js/langs/index.js',
+  // Language packs are cached the first time they load (see fetch handler).
   'icons/icon-192.png', 'icons/icon-512.png',
 ];
 
@@ -20,11 +21,14 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return;
   e.respondWith(caches.open(VERSION).then(async (cache) => {
-    const cached = await cache.match(e.request, { ignoreSearch: true });
-    const fresh = fetch(e.request).then((res) => {
+    try {
+      const res = await fetch(e.request, { cache: 'no-cache' });
       if (res.ok) cache.put(e.request, res.clone());
       return res;
-    }).catch(() => cached);
-    return cached || fresh;
+    } catch (err) {
+      const cached = await cache.match(e.request, { ignoreSearch: true });
+      if (cached) return cached;
+      throw err;
+    }
   }));
 });
