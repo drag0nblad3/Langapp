@@ -7,6 +7,9 @@ export let WORD_BY_ID = {};
 export let GRAMMAR_BY_ID = {};
 export let STORY_LIST = [];
 export let STORY_BY_ID = {};
+export let LESSON_LIST = [];
+export let LESSON_BY_ID = {};
+export let DRILL_BY_ID = {};
 export let LETTER_GROUPS = [];
 export let LETTERS = []; // flat, in teaching order: { kana, answers, script, group, first }
 export let LETTER_BY_UNIT = {};
@@ -142,6 +145,31 @@ export function initContent(pack) {
     }),
   }));
   STORY_BY_ID = Object.fromEntries(STORY_LIST.map((s) => [s.id, s]));
+
+  // Grammar lessons: short explanations with examples, plus fill-in-the-blank drills
+  // that become practice cards (g:<drillId>). See CONTENT.md.
+  LESSON_LIST = pack.content.flatMap((c) => (c.lessons || []).map((l) => ({
+    ...l,
+    pack: c.id,
+    body: (l.body || []).map((b) => (b.ex ? { ...b, tokens: parseLine(b.ex) } : b)),
+    drills: (l.drills || []).map((d) => {
+      const full = d.q.replace('___', d.answer);
+      const tokens = parseLine(full);
+      return {
+        ...d,
+        lesson: l.id,
+        qTokens: splitTokens(d.q).map((raw) => (raw === '___' ? { raw, kind: 'blank', plain: '', segments: [] } : parseToken(raw))),
+        tokens,
+        text: tokens.map((t) => t.plain).join(pack.usesSpaces ? ' ' : '').replace(/ ([.,!?;:])/g, '$1'),
+      };
+    }),
+  })));
+  // Shown in the order of the stories they go with, so the list follows the course.
+  const storyPos = Object.fromEntries(STORY_LIST.map((st, i) => [st.id, i]));
+  LESSON_LIST = LESSON_LIST.map((l, i) => [l, storyPos[l.story] ?? Infinity, i])
+    .sort((a, b) => a[1] - b[1] || a[2] - b[2]).map(([l]) => l);
+  LESSON_BY_ID = Object.fromEntries(LESSON_LIST.map((l) => [l.id, l]));
+  DRILL_BY_ID = Object.fromEntries(LESSON_LIST.flatMap((l) => l.drills.map((d) => [d.id, d])));
 
   EXAMPLE = {};
   for (const s of STORY_LIST) {

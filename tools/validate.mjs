@@ -105,17 +105,46 @@ for (const s of C.STORY_LIST) {
 }
 for (const w of C.WORDS) if (!usedWords.has(w.id)) warn(`Word "${w.id}" isn't used in any story yet (it will have no example sentence)`);
 
+// ---- grammar lessons and their practice drills
+dupes(C.LESSON_LIST.map((l) => l.id), 'lesson');
+dupes(C.LESSON_LIST.flatMap((l) => l.drills.map((d) => d.id)), 'drill');
+for (const l of C.LESSON_LIST) {
+  if (!/^[a-z0-9-]+$/.test(l.id)) err(`Lesson id "${l.id}" should be lowercase letters, digits and dashes`);
+  if (!l.title || !l.summary) err(`Lesson "${l.id}" needs a title and a summary`);
+  if (l.story && !C.STORY_BY_ID[l.story]) err(`Lesson "${l.id}" links to story "${l.story}", which doesn't exist`);
+  if (!l.drills.length) warn(`Lesson "${l.id}" has no drills (nothing goes into reviews)`);
+  for (const b of l.body) {
+    if (b.ex) {
+      if (!b.en) err(`Lesson "${l.id}": example "${b.ex}" has no translation`);
+      for (const t of b.tokens) if (t.kind === 'unknown') err(`Lesson "${l.id}" example: "${t.raw}" doesn't match any word, form or grammar entry`);
+    }
+  }
+  for (const d of l.drills) {
+    if (!/^[a-z0-9-]+$/.test(d.id)) err(`Drill id "${d.id}" should be lowercase letters, digits and dashes`);
+    if ((d.q.match(/___/g) || []).length !== 1) err(`Drill "${d.id}" needs exactly one ___ blank`);
+    if (!d.en) err(`Drill "${d.id}" has no translation`);
+    const choices = new Set(d.choices || []);
+    if (choices.size < 2) err(`Drill "${d.id}" needs at least two different choices`);
+    if (!choices.has(d.answer)) err(`Drill "${d.id}": the answer "${d.answer}" isn't among its choices`);
+    for (const t of d.tokens) if (t.kind === 'unknown') err(`Drill "${d.id}": "${t.raw}" doesn't match any word, form or grammar entry`);
+  }
+}
+
 // ---- lock file: published ids must stay stable
 const lockPath = join(root, `js/langs/${lang}/ids.lock.json`);
 const current = {
   words: C.WORDS.map((w) => w.id),
   letters: C.LETTERS.map((l) => l.unit),
   stories: Object.fromEntries(C.STORY_LIST.map((s) => [s.id, s.parsed.map((l) => l.text)])),
+  lessons: C.LESSON_LIST.map((l) => l.id),
+  drills: C.LESSON_LIST.flatMap((l) => l.drills.map((d) => d.id)),
 };
 if (existsSync(lockPath)) {
   const lock = JSON.parse(readFileSync(lockPath, 'utf8'));
   for (const id of lock.words) if (!current.words.includes(id)) err(`Published word "${id}" was removed or renamed (learners' cards point to it)`);
   for (const u of lock.letters) if (!current.letters.includes(u)) err(`Published letter "${u}" was removed`);
+  for (const id of lock.lessons || []) if (!current.lessons.includes(id)) err(`Published lesson "${id}" was removed or renamed (learners' progress points to it)`);
+  for (const id of lock.drills || []) if (!current.drills.includes(id)) err(`Published drill "${id}" was removed or renamed (learners' practice cards point to it)`);
   for (const [sid, lines] of Object.entries(lock.stories)) {
     const now = current.stories[sid];
     if (!now) { err(`Published story "${sid}" was removed or renamed`); continue; }
@@ -149,7 +178,7 @@ if (progressFile) {
 }
 
 // ---- output
-console.log(`${pack.name} (${pack.code}): ${pack.content.length} content pack(s), ${C.LETTERS.length} letters, ${C.WORDS.length} words, ${allGrammar.length} grammar entries, ${C.STORY_LIST.length} stories\n`);
+console.log(`${pack.name} (${pack.code}): ${pack.content.length} content pack(s), ${C.LETTERS.length} letters, ${C.WORDS.length} words, ${allGrammar.length} grammar entries, ${C.STORY_LIST.length} stories, ${C.LESSON_LIST.length} grammar lessons\n`);
 console.log('Stories ("90% known after" = words a learner must have started, in vocab order):');
 for (const r of report) {
   console.log(`  ${r.id.padEnd(6)} ${r.title.padEnd(14)} ${String(r.lines).padStart(2)} lines  90% known after ${String(r.readableAt).padStart(3)} words  ${String(r.newWords.length).padStart(2)} words not in earlier stories  ${r.glosses} one-off glosses`);
@@ -165,6 +194,8 @@ if (updateLock) {
   const merged = {
     words: [...new Set([...prev.words, ...current.words])],
     letters: [...new Set([...prev.letters, ...current.letters])],
+    lessons: [...new Set([...(prev.lessons || []), ...current.lessons])],
+    drills: [...new Set([...(prev.drills || []), ...current.drills])],
     stories: { ...current.stories, ...Object.fromEntries(Object.entries(prev.stories).filter(([k]) => !current.stories[k])) },
   };
   writeFileSync(lockPath, `${JSON.stringify(merged, null, 1)}\n`);

@@ -397,4 +397,109 @@ const stories = [
   },
 ];
 
-export default { id: '04-people', title: 'People and plans', vocab, moreForms, grammar, stories };
+// Grammar lessons: see 01-foundations.js and CONTENT.md. Never rename or remove ids.
+const lessons = [
+  {
+    id: 'plain-forms',
+    title: 'Plain forms',
+    summary: 'The casual verb shapes friends use, which also go inside longer sentences.',
+    story: 's35',
+    body: [
+      'Every polite ending has a **plain** partner. Friends and family talk in plain forms, and many grammar patterns need them in the middle of a sentence.',
+      { table: [['Polite', 'Plain'], ['あります', 'ある'], ['ありません', 'ない'], ['ありました', 'あった'], ['しましょう', 'しよう'], ['いきましょう', 'いこう'], ['ひま です か', 'ひま ？']], head: true },
+      { ex: 'あした は だめ 。 アルバイト が ある 。', en: "Tomorrow's no good. I have work." },
+      { ex: 'うん 、 いい よ 。 あさって に しよう 。', en: "Yeah, sure. Let's do the day after tomorrow." },
+      'Before patterns like **ほう が いい** ("you\'d better"), the verb is always plain, even in a polite sentence.',
+      { ex: 'よる は コーヒー を のまない ほう が いい です よ 。', en: "You'd better not drink coffee in the evening." },
+      { tip: 'The plain form of the ます form is the "dictionary form": たべます → たべる, のみます → のむ.' },
+    ],
+    drills: [
+      { id: 'pl-aru', q: 'あした は だめ 。 アルバイト が ___ 。', en: "Tomorrow's no good. I've got work. (to a friend)", answer: 'ある', choices: ['ある', 'あって', 'あった'], note: 'Casual: あります → ある.' },
+      { id: 'pl-shiyou', q: 'うん 、 いい よ 。 あさって に ___ 。', en: "Yeah, sure. Let's make it the day after tomorrow. (to a friend)", answer: 'しよう', choices: ['しよう', 'した', 'して'], note: 'Casual "let\'s": しましょう → しよう.' },
+      { id: 'pl-ikou', q: 'じゃあ 、 あさって 、 いっしょに ___ 。', en: "OK, let's go together then. (to a friend)", answer: 'いこう', choices: ['いこう', 'いった', 'いって'], note: 'Casual "let\'s": いきましょう → いこう.' },
+      { id: 'pl-nomanai', q: 'よる は コーヒー を ___ ほう が いい です よ 。', en: "You'd better not drink coffee in the evening.", answer: 'のまない', choices: ['のまない', 'のみません', 'のんで'], note: 'ほう が いい needs a plain verb: のみません → のまない.' },
+      { id: 'pl-neta', q: 'はやく ___ ほう が いい です 。', en: 'You should go to bed early.', answer: 'ねた', choices: ['ねた', 'ねます', 'ねて'], note: 'For "you should", ほう が いい usually takes the plain past: ねた.' },
+    ],
+  },
+  {
+    id: 'potential',
+    title: 'Can: the potential form',
+    summary: 'Saying what you can and can\'t do.',
+    story: 's40',
+    body: [
+      'For many verbs, "can" is a new ending. Verbs like よむ change the last sound to the え-row: よみます → **よめます**. Verbs like たべる add られ: たべます → **たべられます**.',
+      { table: [['Verb', 'Can', "Can't"], ['よみます', 'よめます', 'よめません'], ['ひきます', 'ひけます', 'ひけません'], ['うたいます', 'うたえます', 'うたえません'], ['たべます', 'たべられます', 'たべられません'], ['します', 'できます', 'できません']], head: true },
+      { ex: 'ひらがな と カタカナ は よめます 。', en: 'She can read hiragana and katakana.' },
+      { ex: 'でも 、 りょうり は ぜんぜん できません 。', en: "But she can't cook at all." },
+      'The thing you can do usually takes **が** instead of を.',
+      { ex: 'マリア=name さん は ギター が ひけます 。', en: 'Maria can play the guitar.' },
+      { tip: 'X が できます also means "be good at / know": 日本語[にほんご] が できます, "can speak Japanese".' },
+    ],
+    drills: [
+      { id: 'pot-yomeru', q: 'ひらがな と カタカナ は ___ 。', en: 'She can read hiragana and katakana.', answer: 'よめます', choices: ['よめます', 'よみます', 'よめません'], note: 'よみます → よめます, "can read".' },
+      { id: 'pot-hikeru', q: 'マリア=name さん は ギター が ___ 。', en: 'Maria can play the guitar.', answer: 'ひけます', choices: ['ひけます', 'ひきます', 'ひきました'], note: 'ひきます → ひけます, "can play".' },
+      { id: 'pot-dekinai', q: 'でも 、 りょうり は ぜんぜん ___ 。', en: "But she can't cook at all.", answer: 'できません', choices: ['できません', 'できます', 'できました'], note: 'ぜんぜん "at all" goes with a negative.' },
+      { id: 'pot-ga', q: 'マリア=name さん は なっとう ___ たべられます か 。', en: 'Can you eat natto, Maria?', answer: 'が', choices: ['が', 'で', 'に'], note: 'With "can" forms, the thing usually takes が.' },
+      { id: 'pot-nemurenai', q: 'さいきん 、 よく ___ 。', en: "I haven't been able to sleep well lately.", answer: 'ねむれません', choices: ['ねむれません', 'ねます', 'ねました'], note: 'ねむります → ねむれません, "can\'t sleep".' },
+    ],
+  },
+  {
+    id: 'kamoshiremasen',
+    title: 'Maybe: かもしれません and でしょう',
+    summary: 'Saying something might happen, or probably will.',
+    story: 's39',
+    body: [
+      '**かもしれません** after a plain verb or a noun means "might". It is quite unsure.',
+      { ex: 'あした 、 たいふう が 来[く]る かもしれません 。', en: 'A typhoon might come tomorrow.' },
+      { ex: '学校[がっこう] は やすみ に なる かもしれません 。', en: 'School might be closed.' },
+      '**でしょう** means "probably". Weather forecasts use it a lot.',
+      { ex: 'あした も はれ でしょう 。', en: 'Tomorrow will probably be sunny too.' },
+      { tip: 'Both go after the plain form: 来[く]る, not 来[き]ます.' },
+    ],
+    drills: [
+      { id: 'ks-kuru', q: 'あした 、 たいふう が ___ かもしれません 。', en: 'A typhoon might come tomorrow.', answer: '来[く]る', choices: ['来[く]る', '来[き]ます', '来[き]て'], note: 'かもしれません goes after the plain form: 来[く]る.' },
+      { id: 'ks-naru', q: '学校[がっこう] は やすみ に なる ___ 。', en: 'School might be closed.', answer: 'かもしれません', choices: ['かもしれません', 'でした', 'ません'], note: 'かもしれません is "might".' },
+      { id: 'ks-deshou', q: 'あした も はれ ___ 。', en: 'Tomorrow will probably be sunny too.', answer: 'でしょう', choices: ['でしょう', 'でした', 'じゃありません'], note: 'でしょう is "probably".' },
+    ],
+  },
+  {
+    id: 'tara',
+    title: 'If: 〜たら',
+    summary: 'If and when, made from the past form.',
+    story: 's41',
+    body: [
+      'Add **ら** to the plain past (the た-form) to say "if" or "when".',
+      { table: [['Plain past', 'If'], ['はれた', 'はれたら'], ['ふった', 'ふったら'], ['あたった', 'あたったら'], ['あめ だった', 'あめ だったら']], head: true },
+      { ex: 'あした はれたら 、 うみ へ いきましょう 。', en: "If it's sunny tomorrow, let's go to the beach." },
+      { ex: 'あめ だったら 、 びじゅつかん へ いきましょう 。', en: "If it rains, let's go to the art museum." },
+      'もし at the start makes it clear an "if" is coming.',
+      { tip: 'Nouns and な-adjectives use だったら: あめ だったら, ひま だったら.' },
+    ],
+    drills: [
+      { id: 'tara-hare', q: 'あした ___ 、 うみ へ いきましょう 。', en: "If it's sunny tomorrow, let's go to the beach.", answer: 'はれたら', choices: ['はれたら', 'はれます', 'はれて'], note: 'はれた + ら = "if it\'s sunny".' },
+      { id: 'tara-furu', q: 'あめ が ___ 、 どう します か 。', en: 'What will we do if it rains?', answer: 'ふったら', choices: ['ふったら', 'ふります', 'ふらない'], note: 'ふった + ら = "if it rains".' },
+      { id: 'tara-datta', q: 'あめ ___ 、 びじゅつかん へ いきましょう 。', en: "If it rains, let's go to the art museum.", answer: 'だったら', choices: ['だったら', 'でした', 'です'], note: 'After a noun, "if" is だったら.' },
+      { id: 'tara-ataru', q: 'もし たからくじ="the lottery" が ___ 、 なに を します か 。', en: 'If you won the lottery, what would you do?', answer: 'あたったら', choices: ['あたったら', 'あたります', 'あたって'], note: 'あたった + ら = "if it hits".' },
+    ],
+  },
+  {
+    id: 'n-desu',
+    title: 'Explaining: 〜ん です',
+    summary: 'Asking for and giving the story behind something.',
+    story: 's43',
+    body: [
+      '**ん です** after a plain form explains or asks about a situation. It is softer and more personal than です alone: "the thing is…", "is it that…?".',
+      { ex: 'けん=name さん 、 なにか あった ん です か 。', en: 'Ken, did something happen?' },
+      { ex: 'さいふ を なくした ん です 。', en: 'I lost my wallet. (That\'s what\'s wrong.)' },
+      'The verb before ん is plain: なくした, not なくしました. With a な-adjective or noun, add な: ひま な ん です.',
+      { tip: 'Use it when you notice something and want to know why, or when you explain why you are upset, late or busy.' },
+    ],
+    drills: [
+      { id: 'nd-atta', q: 'けん=name さん 、 なにか あった ___ です か 。', en: 'Ken, did something happen?', answer: 'ん', choices: ['ん', 'か', 'よ'], note: 'ん です か asks for the story behind what you see.' },
+      { id: 'nd-nakushita', q: 'さいふ を ___ ん です 。', en: 'I lost my wallet.', answer: 'なくした', choices: ['なくした', 'なくしました', 'なくして'], note: 'ん です needs a plain verb: なくした.' },
+      { id: 'nd-kureta', q: 'しんせつ な 人[ひと] が とどけて ___ ん です よ 。', en: 'A kind person handed it in (for you).', answer: 'くれた', choices: ['くれた', 'くれました', 'あげた'], note: 'Plain past before ん. てくれる is a favour done for you.' },
+    ],
+  },
+];
+
+export default { id: '04-people', title: 'People and plans', vocab, moreForms, grammar, stories, lessons };

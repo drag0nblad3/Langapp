@@ -432,6 +432,89 @@ const stories = [
   },
 ];
 
+// Grammar lessons: see 01-basics.js and CONTENT.md. Never rename or remove ids.
+const lessons = [
+  {
+    id: 'time',
+    title: '¿Qué hora es?',
+    summary: 'Telling the time, and saying when something happens.',
+    story: 'e11',
+    body: [
+      'To tell the time, use **son las** and the hour. One o\'clock is the exception: **es la una**.',
+      { ex: 'Son las siete de la mañana=la-manana .', en: "It's seven in the morning." },
+      'To say when something happens, use **a las**: "at".',
+      { ex: '¡ Tengo prisa ! La clase empieza a las ocho y_media .', en: "I'm in a hurry! Class starts at half past eight." },
+      { table: [['Spanish', 'English'], ['y media', 'half past'], ['y veinte', 'twenty past'], ['de la mañana', 'in the morning'], ['de la tarde', 'in the afternoon']], head: true },
+      { tip: 'Without a clock time, it is por la mañana, por la tarde, por la noche.' },
+    ],
+    drills: [
+      { id: 'ti-son', q: '___ las ocho .', en: "It's eight o'clock.", answer: 'Son', choices: ['Son', 'Es', 'Está'], note: 'Hours from two up: son las…' },
+      { id: 'ti-a', q: 'La clase empieza ___ las ocho y_media .', en: 'Class starts at half past eight.', answer: 'a', choices: ['a', 'en', 'de'], note: '"At" a time: a las.' },
+      { id: 'ti-de', q: 'Son las siete ___ la mañana=la-manana .', en: "It's seven in the morning.", answer: 'de', choices: ['de', 'en', 'por'], note: 'With a clock time: de la mañana.' },
+      { id: 'ti-hora', q: 'Mamá="Mom" , ¿ qué ___ es ?', en: 'Mom, what time is it?', answer: 'hora', choices: ['hora', 'tiempo', 'día'], note: '¿Qué hora es? asks the time. Tiempo is time in general, or the weather.' },
+    ],
+  },
+  {
+    id: 'gustar',
+    title: 'me gusta',
+    summary: 'Saying what you like, which works back to front in Spanish.',
+    story: 'e17',
+    body: [
+      'Spanish says "music pleases me" instead of "I like music". The thing you like is the subject, and **me / te / le** says who likes it.',
+      { ex: 'En mi tiempo libre , me gusta mucho la música .', en: 'In my free time, I really like music.' },
+      { table: [['Who', ''], ['I like', 'me gusta'], ['you like', 'te gusta'], ['he / she likes', 'le gusta']], head: true },
+      'With a person\'s name, add **a** at the front and keep le: a mi madre le gusta.',
+      { ex: 'A mi madre le gusta nadar .', en: 'My mother likes swimming.' },
+      { tip: 'When the thing you like is plural, use gustan: me gustan los perros.' },
+    ],
+    drills: [
+      { id: 'gu-gusta', q: 'En mi tiempo libre , me ___ mucho la música .', en: 'In my free time, I really like music.', answer: 'gusta', choices: ['gusta', 'gusto', 'gustan'], note: 'La música is one thing: gusta.' },
+      { id: 'gu-le', q: 'A mi madre ___ gusta nadar .', en: 'My mother likes swimming.', answer: 'le', choices: ['le', 'me', 'se'], note: 'For he or she: le gusta.' },
+      { id: 'gu-te', q: '¿ Y tú ? ¿ Qué ___ gusta hacer ?', en: 'And you? What do you like to do?', answer: 'te', choices: ['te', 'le', 'me'], note: 'For you (tú): te gusta.' },
+      { id: 'gu-me', q: '___ gusta mi casa porque es muy tranquila .', en: "I like my house because it's very quiet.", answer: 'Me', choices: ['Me', 'Le', 'Te'], note: 'For I: me gusta.' },
+    ],
+  },
+  {
+    id: 'estar-ando',
+    title: 'estoy + -ando, -iendo',
+    summary: 'Saying what is happening right now.',
+    story: 'e20',
+    body: [
+      'For something happening right now, use **estar** and the verb ending in **-ando** (-ar verbs) or **-iendo** (-er and -ir verbs).',
+      { table: [['Verb', 'Right now'], ['cocinar', 'está cocinando'], ['hablar', 'está hablando'], ['leer', 'está leyendo'], ['dormir', 'está durmiendo'], ['escribir', 'está escribiendo']], head: true },
+      { ex: 'Mi padre está cocinando en la cocina .', en: 'My father is cooking in the kitchen.' },
+      { ex: 'El gato está durmiendo en mi cama .', en: 'The cat is sleeping on my bed.' },
+      { tip: 'Spanish uses this less than English. For habits and plans, the plain present is enough: estudio español.' },
+    ],
+    drills: [
+      { id: 'ea-cocinando', q: 'Mi padre está ___ en la cocina .', en: 'My father is cooking in the kitchen.', answer: 'cocinando', choices: ['cocinando', 'cocina', 'cocinar'], note: '-ar verb: cocinar → cocinando.' },
+      { id: 'ea-leyendo', q: 'Mi madre está ___ un libro .', en: 'My mother is reading a book.', answer: 'leyendo', choices: ['leyendo', 'lee', 'leer'], note: 'leer → leyendo.' },
+      { id: 'ea-estoy', q: '¿ Y yo ? Yo ___ estudiando español .', en: "And me? I'm studying Spanish.", answer: 'estoy', choices: ['estoy', 'está', 'soy'], note: 'I (yo): estoy.' },
+      { id: 'ea-durmiendo', q: 'El gato está ___ en mi cama .', en: 'The cat is sleeping on my bed.', answer: 'durmiendo', choices: ['durmiendo', 'duerme', 'dormir'], note: 'dormir → durmiendo.' },
+    ],
+  },
+  {
+    id: 'preterite',
+    title: 'The past: fui, comí, compramos',
+    summary: 'The simple past for things that happened and finished.',
+    story: 'e19',
+    body: [
+      'The **preterite** is the past for finished events: yesterday, last week, at eleven o\'clock.',
+      { table: [['', 'comprar', 'comer', 'ir / ser'], ['I', 'compré', 'comí', 'fui'], ['he, she', 'compró', 'comió', 'fue'], ['we', 'compramos', 'comimos', 'fuimos']], head: true },
+      { ex: 'Yo comí pollo y ella comió pescado .', en: 'I had chicken and she had fish.' },
+      { ex: 'Fuimos al cine y vimos una película .', en: 'We went to the movies and saw a film.' },
+      { tip: 'ir (to go) and ser (to be) share the same past: fui is "I went" or "I was", fue is "it was" or "she went".' },
+    ],
+    drills: [
+      { id: 'pret-fui', q: 'Por la mañana=la-manana , ___ al mercado con mi hermana .', en: 'In the morning, I went to the market with my sister.', answer: 'fui', choices: ['fui', 'voy', 'fue'], note: 'I went: fui.' },
+      { id: 'pret-comio', q: 'Yo comí pollo y ella ___ pescado .', en: 'I had chicken and she had fish.', answer: 'comió', choices: ['comió', 'comí', 'come'], note: 'She ate: comió.' },
+      { id: 'pret-fue', q: 'La película ___ muy buena .', en: 'The movie was very good.', answer: 'fue', choices: ['fue', 'fui', 'es'], note: 'It was: fue.' },
+      { id: 'pret-volvi', q: '___ a casa a las once .', en: 'I got home at eleven.', answer: 'Volví', choices: ['Volví', 'Vuelvo', 'Volvió'], note: 'I returned: volví.' },
+      { id: 'pret-compramos', q: '___ fruta y verduras .', en: 'We bought fruit and vegetables.', answer: 'Compramos', choices: ['Compramos', 'Compré', 'Compró'], note: 'We bought: compramos. (It is also "we buy". The context tells you which.)' },
+    ],
+  },
+];
+
 export default {
   id: '02-daily-life',
   title: 'Daily life',
@@ -439,4 +522,5 @@ export default {
   moreForms,
   grammar,
   stories,
+  lessons,
 };

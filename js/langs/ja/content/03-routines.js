@@ -443,4 +443,90 @@ const stories = [
   },
 ];
 
-export default { id: '03-routines', title: 'Routines and errands', vocab, moreForms, grammar, stories };
+// Grammar lessons: see 01-foundations.js and CONTENT.md. Never rename or remove ids.
+const lessons = [
+  {
+    id: 'comparisons',
+    title: 'Comparing: より, ほう and いちばん',
+    summary: 'Which one you like better, and which one best.',
+    story: 's26',
+    body: [
+      'To ask "which do you like better, A or B?": **A と B と どちら が すき です か**.',
+      { ex: 'ゆき=name さん は なつ と ふゆ と どちら が すき です か 。', en: 'Yuki, which do you like better, summer or winter?' },
+      'To answer, use **の ほう が**, "the side of…". Add **より** after the thing that loses: "than".',
+      { ex: 'わたし は ふゆ より なつ の ほう が すき です 。', en: 'I like summer better than winter.' },
+      'For "the most" out of a group, use **いちばん** and say the group with の 中[なか] で.',
+      { ex: 'でも 、 一年[いちねん] の 中[なか] で 、 はる が いちばん すき です 。', en: 'But of the whole year, I like spring best.' },
+      { tip: 'A より B の ほう が and B の ほう が A より both work. Japanese word order is flexible as long as each word keeps its particle.' },
+    ],
+    drills: [
+      { id: 'cmp-yori', q: 'わたし は ふゆ ___ なつ の ほう が すき です 。', en: 'I like summer better than winter.', answer: 'より', choices: ['より', 'から', 'まで'], note: 'より marks the one you like less: "than winter".' },
+      { id: 'cmp-hou', q: 'ふゆ の ___ が すき です 。', en: 'I like winter better.', answer: 'ほう', choices: ['ほう', 'より', 'こと'], note: 'の ほう が marks the one you prefer.' },
+      { id: 'cmp-dochira', q: 'なつ と ふゆ と ___ が すき です か 。', en: 'Which do you like better, summer or winter?', answer: 'どちら', choices: ['どちら', 'どこ', 'だれ'], note: 'どちら is "which (of two)".' },
+      { id: 'cmp-ichiban', q: 'はる が ___ すき です 。', en: 'I like spring best.', answer: 'いちばん', choices: ['いちばん', 'より', 'ほう'], note: 'いちばん is "the most".' },
+    ],
+  },
+  {
+    id: 'ta-koto',
+    title: 'Have you ever: 〜た こと が あります',
+    summary: 'Talking about experiences with the plain past.',
+    story: 's27',
+    body: [
+      'To say you have done something at some point in your life, use the plain past (the た-form) + **こと が あります**: "there is the experience of…".',
+      { ex: 'けん=name さん は しんかんせん に のった こと が あります か 。', en: 'Ken, have you ever ridden the bullet train?' },
+      'The た-form is the て-form with て changed to た, and で changed to だ.',
+      { table: [['て-form', 'た-form'], ['のって', 'のった'], ['たべて', 'たべた'], ['いって', 'いった'], ['のんで', 'のんだ']], head: true },
+      'For "never", use ありません. いちど も adds "not even once".',
+      { ex: 'いいえ 、 いちど も いった こと が ありません 。', en: "No, I've never been." },
+      { tip: 'The short answer is just はい、あります or いいえ、ありません.' },
+    ],
+    drills: [
+      { id: 'tk-notta', q: 'しんかんせん に ___ こと が あります か 。', en: 'Have you ever ridden the bullet train?', answer: 'のった', choices: ['のった', 'のります', 'のって'], note: 'こと が あります needs the plain past: のった.' },
+      { id: 'tk-tabeta', q: 'なっとう を ___ こと が あります か 。', en: 'Have you ever eaten natto?', answer: 'たべた', choices: ['たべた', 'たべます', 'たべて'], note: 'たべて → たべた.' },
+      { id: 'tk-never', q: 'いいえ 、 いちど も いった こと が ___ 。', en: "No, I've never been.", answer: 'ありません', choices: ['ありません', 'あります', 'ありました'], note: '"Never" is こと が ありません.' },
+      { id: 'tk-koto', q: 'ゆき=name さん は アメリカ へ いった ___ が あります か 。', en: 'Yuki, have you ever been to America?', answer: 'こと', choices: ['こと', 'ほう', 'の'], note: 'た + こと が あります is "have done".' },
+    ],
+  },
+  {
+    id: 'te-steps',
+    title: 'Steps with the て-form',
+    summary: 'Joining actions in order: do this, then that.',
+    story: 's29',
+    body: [
+      'The て-form links actions in the order they happen: "do A, (then) do B". Only the last verb shows the time and politeness.',
+      { ex: 'なべ に にく と やさい を いれて 、 いためます 。', en: 'We put the meat and vegetables in the pot and fry them.' },
+      { ex: 'みず を いれて 、 二十分[にじゅっぷん] ぐらい にます 。', en: 'We add water and simmer it for about twenty minutes.' },
+      'Recipes and instructions also use **〜て ください** for each step.',
+      { ex: 'まず 、 にんじん と たまねぎ と じゃがいも を きって ください 。', en: 'First, please cut the carrots, onions and potatoes.' },
+      { tip: '**ぐらい** after an amount means "about": 二十分[にじゅっぷん] ぐらい, about twenty minutes. For a clock time, use ごろ.' },
+    ],
+    drills: [
+      { id: 'st-kitte', q: 'にんじん を ___ ください 。', en: 'Please cut the carrots.', answer: 'きって', choices: ['きって', 'きります', 'きりました'], note: 'きります → きって.' },
+      { id: 'st-irete', q: 'なべ に にく と やさい を ___ 、 いためます 。', en: 'We put the meat and vegetables in the pot and fry them.', answer: 'いれて', choices: ['いれて', 'いれます', 'いれた'], note: 'The first action takes the て-form. The last verb (いためます) carries the tense.' },
+      { id: 'st-gurai', q: 'みず を いれて 、 二十分[にじゅっぷん] ___ にます 。', en: 'We add water and simmer it for about twenty minutes.', answer: 'ぐらい', choices: ['ぐらい', 'ごろ', 'まで'], note: 'ぐらい is "about" with an amount of time.' },
+      { id: 'st-kaette', q: 'うち に ___ 、 ばんごはん を たべます 。', en: 'I go home and eat dinner.', answer: '帰[かえ]って', choices: ['帰[かえ]って', '帰[かえ]ります', '帰[かえ]りました'], note: '帰[かえ]ります → 帰[かえ]って. It\'s a u-verb, even though it ends in える.' },
+    ],
+  },
+  {
+    id: 'nagara-tari',
+    title: 'ながら and たり…たり',
+    summary: 'Two things at once, and a list of things you did.',
+    story: 's34',
+    body: [
+      '**ながら** joins two actions done at the same time: "while…". Drop ます and add ながら. The main action comes last.',
+      { ex: 'ときどき おんがく を ききながら べんきょうします 。', en: 'Sometimes I study while listening to music.' },
+      '**〜たり 〜たり します** lists a few things you do, as examples: "do things like A and B". Add り to the た-form.',
+      { ex: 'にちようび は 本[ほん] を よんだり 、 テレビ を 見[み]たり しました 。', en: 'On Sunday I read and watched TV.' },
+      { table: [['ます form', 'ながら', 'たり'], ['ききます', 'ききながら', 'きいたり'], ['たべます', 'たべながら', 'たべたり'], ['よみます', 'よみながら', 'よんだり']], head: true },
+      { tip: 'With たり, the final します carries the tense: しました for the past.' },
+    ],
+    drills: [
+      { id: 'ng-taberu', q: 'おべんとう を ___ 、 たんご を おぼえます 。', en: 'I memorize vocabulary while eating my bento.', answer: 'たべながら', choices: ['たべながら', 'たべて', 'たべたり'], note: 'ながら is "while doing".' },
+      { id: 'ng-kiku', q: 'おんがく を ___ べんきょうします 。', en: 'I study while listening to music.', answer: 'ききながら', choices: ['ききながら', 'ききます', 'きいて'], note: 'ききます → きき + ながら.' },
+      { id: 'tr-yomu', q: 'にちようび は 本[ほん] を ___ 、 テレビ を 見[み]たり しました 。', en: 'On Sunday I did things like reading and watching TV.', answer: 'よんだり', choices: ['よんだり', 'よみます', 'よみながら'], note: 'よんだ + り. たり pairs with a second たり.' },
+      { id: 'tr-shita', q: 'どようび は うち で そうじ したり 、 せんたく したり ___ 。', en: 'On Saturday I stayed home and did cleaning, laundry and so on.', answer: 'しました', choices: ['しました', 'します', 'して'], note: 'After the たり list, します carries the tense. Saturday is past: しました.' },
+    ],
+  },
+];
+
+export default { id: '03-routines', title: 'Routines and errands', vocab, moreForms, grammar, stories, lessons };

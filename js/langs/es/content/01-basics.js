@@ -376,4 +376,108 @@ const stories = [
   },
 ];
 
-export default { id: '01-basics', title: 'Basics', vocab, grammar, stories };
+// Grammar lessons. Each one goes with a story (it opens once the learner knows half of
+// that story's words) and its drills become fill-in-the-blank cards in daily reviews.
+// Never rename or remove lesson or drill ids: saved progress refers to them.
+const lessons = [
+  {
+    id: 'ser-estar',
+    title: 'ser and estar',
+    summary: 'Two verbs for "to be": what something is, and how or where it is.',
+    story: 'e10',
+    body: [
+      'Spanish has two verbs for "to be". **ser** says what someone or something is: a job, a nationality, what it is like. **estar** says where it is or how it is right now.',
+      { table: [['', 'ser', 'estar'], ['I', 'soy', 'estoy'], ['you', 'eres', 'estás'], ['he, she, you (formal)', 'es', 'está'], ['we', 'somos', 'estamos'], ['they', 'son', 'están']], head: true },
+      { ex: 'Mi padre se llama Carlos=name . Es médico .', en: "My father's name is Carlos. He's a doctor." },
+      { ex: 'Ana=name y Tomás=name están en el parque .', en: 'Ana and Tomás are in the park.' },
+      { tip: 'A quick test: places and feelings take estar (está en casa, está bien). Who or what something is takes ser (es profesora, es bonito).' },
+    ],
+    drills: [
+      { id: 'se-medico', q: 'Mi padre ___ médico .', en: 'My father is a doctor.', answer: 'es', choices: ['es', 'está', 'son'], note: 'A job is what someone is: ser.' },
+      { id: 'se-parque', q: 'Ana=name y Tomás=name ___ en el parque .', en: 'Ana and Tomás are in the park.', answer: 'están', choices: ['están', 'son', 'está'], note: 'Where someone is: estar. Two people: están.' },
+      { id: 'se-simpatica', q: 'Mi hermana ___ muy simpática .', en: 'My sister is very nice.', answer: 'es', choices: ['es', 'está', 'son'], note: 'What someone is like: ser.' },
+      { id: 'se-dia', q: 'Hoy ___ un día muy bonito .', en: 'Today is a really nice day.', answer: 'es', choices: ['es', 'está', 'hay'], note: 'With a noun (un día), use ser.' },
+    ],
+  },
+  {
+    id: 'gender',
+    title: 'el, la, un, una',
+    summary: 'Every noun is masculine or feminine, and the words around it match.',
+    story: 'e8',
+    body: [
+      'Every Spanish noun is either masculine or feminine. Many masculine nouns end in -o and many feminine ones in -a, but always learn the noun with its article.',
+      { table: [['', 'Masculine', 'Feminine'], ['the', 'el gato', 'la casa'], ['a', 'un baño', 'una cocina'], ['the (plural)', 'los días', 'las flores']], head: true },
+      'Adjectives come **after** the noun and match it: -o for masculine, -a for feminine, and -s for plural.',
+      { ex: 'Vivo en una casa pequeña .', en: 'I live in a small house.' },
+      { ex: 'Mi dormitorio es pequeño , pero tiene una ventana grande .', en: 'My bedroom is small, but it has a big window.' },
+      { tip: 'Adjectives ending in -e, like grande, are the same for both: un perro grande, una ventana grande.' },
+    ],
+    drills: [
+      { id: 'gn-una', q: 'Vivo en ___ casa pequeña .', en: 'I live in a small house.', answer: 'una', choices: ['una', 'un', 'unas'], note: 'Casa is feminine: una casa.' },
+      { id: 'gn-pequena', q: 'Vivo en una casa ___ .', en: 'I live in a small house.', answer: 'pequeña', choices: ['pequeña', 'pequeño', 'pequeños'], note: 'The adjective matches casa: feminine, singular.' },
+      { id: 'gn-el', q: '___ gato duerme en mi cama .', en: 'The cat sleeps on my bed.', answer: 'El', choices: ['El', 'La', 'Los'], note: 'Gato is masculine: el gato.' },
+      { id: 'gn-bonito', q: 'Toby=name es pequeño , pero es muy ___ .', en: "Toby is small, but he's very cute.", answer: 'bonito', choices: ['bonito', 'bonita', 'bonitos'], note: 'Toby is a male dog, so bonito.' },
+      { id: 'gn-grande', q: 'Mi dormitorio es pequeño , pero tiene una ventana ___ .', en: 'My bedroom is small, but it has a big window.', answer: 'grande', choices: ['grande', 'grandes'], note: 'Grande is the same for masculine and feminine. One window: no -s.' },
+    ],
+  },
+  {
+    id: 'present',
+    title: 'The present tense',
+    summary: 'Verb endings that show who is doing it.',
+    story: 'e4',
+    body: [
+      'Spanish verbs change their ending for each person, so you can usually leave out "I", "you" or "she". The dictionary form ends in -ar, -er or -ir.',
+      { table: [['', 'estudiar', 'comer', 'vivir'], ['I', 'estudio', 'como', 'vivo'], ['you', 'estudias', 'comes', 'vives'], ['he, she', 'estudia', 'come', 'vive'], ['we', 'estudiamos', 'comemos', 'vivimos'], ['they', 'estudian', 'comen', 'viven']], head: true },
+      { ex: 'Estudio español por la mañana=la-manana .', en: 'I study Spanish in the morning.' },
+      { ex: 'Ana=name bebe agua .', en: 'Ana drinks water.' },
+      { tip: 'The yo form almost always ends in -o: estudio, como, vivo, trabajo. A few common verbs are irregular: tengo, voy, soy.' },
+    ],
+    drills: [
+      { id: 'pr-estudio', q: '___ español por la mañana=la-manana .', en: 'I study Spanish in the morning.', answer: 'Estudio', choices: ['Estudio', 'Estudia', 'Estudiar'], note: 'I (yo): estudio.' },
+      { id: 'pr-trabajo', q: 'Por la tarde , ___ en una tienda .', en: 'In the afternoon, I work in a shop.', answer: 'trabajo', choices: ['trabajo', 'trabaja', 'trabajar'], note: 'I (yo): trabajo.' },
+      { id: 'pr-bebe', q: 'Ana=name ___ agua .', en: 'Ana drinks water.', answer: 'bebe', choices: ['bebe', 'bebo', 'beber'], note: 'She (ella): bebe.' },
+      { id: 'pr-vivo', q: '___ en una casa pequeña .', en: 'I live in a small house.', answer: 'Vivo', choices: ['Vivo', 'Vive', 'Vivir'], note: 'I (yo): vivo.' },
+      { id: 'pr-tenemos', q: 'También ___ un perro .', en: 'We also have a dog.', answer: 'tenemos', choices: ['tenemos', 'tengo', 'tiene'], note: 'We (nosotros): tenemos.' },
+    ],
+  },
+  {
+    id: 'reflexive',
+    title: 'me llamo, se llama',
+    summary: 'Verbs that come with me, te or se.',
+    story: 'e2',
+    body: [
+      'Some verbs come with a small word that points back to the person: **me**, **te** or **se**. "Me llamo Ana" is literally "I call myself Ana".',
+      { table: [['', 'llamarse', 'levantarse'], ['I', 'me llamo', 'me levanto'], ['you', 'te llamas', 'te levantas'], ['he, she', 'se llama', 'se levanta']], head: true },
+      { ex: 'Mi padre se llama Carlos=name .', en: "My father's name is Carlos." },
+      { ex: "Me levanto a las siete=\"seven (o'clock)\" .", en: 'I get up at seven.' },
+      { tip: 'The small word goes before the verb. Daily routine verbs often work this way: levantarse, ducharse, vestirse.' },
+    ],
+    drills: [
+      { id: 'rf-me', q: '¡ Hola ! ___ llamo Ana=name .', en: "Hi! I'm Ana. (My name is Ana.)", answer: 'Me', choices: ['Me', 'Se', 'Te'], note: 'I: me llamo.' },
+      { id: 'rf-se', q: 'Mi padre ___ llama Carlos=name .', en: "My father's name is Carlos.", answer: 'se', choices: ['se', 'me', 'te'], note: 'He: se llama.' },
+      { id: 'rf-levanto', q: "Me ___ a las siete=\"seven (o'clock)\" .", en: 'I get up at seven.', answer: 'levanto', choices: ['levanto', 'levanta', 'levantar'], note: 'I: me levanto.' },
+      { id: 'rf-perro', q: 'También tenemos un perro . ___ llama Toby=name .', en: 'We also have a dog. His name is Toby.', answer: 'Se', choices: ['Se', 'Me', 'Te'], note: 'The dog (it): se llama.' },
+    ],
+  },
+  {
+    id: 'quiero',
+    title: 'quiero + a verb',
+    summary: 'Saying what you want to do.',
+    story: 'e9',
+    body: [
+      'To say what you want to do, use **quiero** and then the verb in its dictionary form (the infinitive, ending in -ar, -er or -ir).',
+      { ex: 'Quiero ir a España="Spain" .', en: 'I want to go to Spain.' },
+      { ex: 'En Madrid=name quiero comer en un buen restaurante .', en: 'In Madrid I want to eat at a good restaurant.' },
+      { table: [['', 'querer'], ['I', 'quiero'], ['you', 'quieres'], ['he, she', 'quiere']], head: true },
+      { tip: 'Only the first verb changes. The second stays as it is in the dictionary: quiero ir, quieres comer, quiere ver.' },
+    ],
+    drills: [
+      { id: 'qi-ir', q: 'Quiero ___ a España="Spain" .', en: 'I want to go to Spain.', answer: 'ir', choices: ['ir', 'voy', 'va'], note: 'After quiero, the verb stays in its dictionary form.' },
+      { id: 'qi-ver', q: 'Quiero ___ Madrid=name y Barcelona=name .', en: 'I want to see Madrid and Barcelona.', answer: 'ver', choices: ['ver', 'veo', 've'], note: 'quiero + ver.' },
+      { id: 'qi-comer', q: 'En Madrid=name quiero ___ en un buen restaurante .', en: 'In Madrid I want to eat at a good restaurant.', answer: 'comer', choices: ['comer', 'como', 'come'], note: 'quiero + comer.' },
+      { id: 'qi-quieres', q: '¿ ___ un café ?', en: 'Do you want a coffee?', answer: 'Quieres', choices: ['Quieres', 'Quiero', 'Quiere'], note: 'You (tú): quieres.' },
+    ],
+  },
+];
+
+export default { id: '01-basics', title: 'Basics', vocab, grammar, stories, lessons };

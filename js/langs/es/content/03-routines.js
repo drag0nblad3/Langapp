@@ -458,4 +458,84 @@ const stories = [
   },
 ];
 
-export default { id: '03-routines', title: 'Routines and errands', vocab, moreForms, grammar, stories };
+// Grammar lessons: see 01-basics.js and CONTENT.md. Never rename or remove ids.
+const lessons = [
+  {
+    id: 'comparisons',
+    title: 'más… que, menos… que',
+    summary: 'Comparing two things, and saying which is the best or worst.',
+    story: 'e25',
+    body: [
+      'To compare, put **más** (more) or **menos** (less) before the adjective, and **que** (than) before the second thing.',
+      { ex: 'El otoño es más fresco que el verano .', en: 'Autumn is cooler than summer.' },
+      { ex: 'Hace menos calor que en verano , y hay muchas flores .', en: "It's not as hot as in summer, and there are lots of flowers." },
+      'A few words have their own forms: **mejor** (better, best) and **peor** (worse, worst).',
+      { ex: 'Para mí , el invierno es la peor estación .', en: 'For me, winter is the worst season.' },
+      { tip: 'For "the most", add el or la: la estación más bonita, the prettiest season.' },
+    ],
+    drills: [
+      { id: 'cm-mas', q: 'El otoño es ___ fresco que el verano .', en: 'Autumn is cooler than summer.', answer: 'más', choices: ['más', 'menos', 'muy'], note: '"Cooler" is más fresco.' },
+      { id: 'cm-que', q: 'El otoño es más fresco ___ el verano .', en: 'Autumn is cooler than summer.', answer: 'que', choices: ['que', 'de', 'con'], note: '"Than" is que.' },
+      { id: 'cm-menos', q: 'Hace ___ calor que en verano .', en: "It's not as hot as in summer. (It's less hot.)", answer: 'menos', choices: ['menos', 'más', 'muy'], note: 'Less: menos.' },
+      { id: 'cm-peor', q: 'Para mí , el invierno es la ___ estación .', en: 'For me, winter is the worst season.', answer: 'peor', choices: ['peor', 'mejor', 'menos'], note: 'Worst: peor. Best would be mejor.' },
+    ],
+  },
+  {
+    id: 'preterite-trip',
+    title: 'The past: -é and -amos',
+    summary: 'Telling the story of a trip: what I did and what we did.',
+    story: 'e26',
+    body: [
+      'Regular -ar verbs in the preterite: **-é** for "I" and **-amos** for "we". The accent on -é matters: viajo is "I travel", viajé is "I travelled".',
+      { table: [['', 'viajar', 'tomar', 'ver (irregular)'], ['I', 'viajé', 'tomé', 'vi'], ['he, she', 'viajó', 'tomó', 'vio'], ['we', 'viajamos', 'tomamos', 'vimos']], head: true },
+      { ex: 'El año pasado , viajé a Perú=name con mi hermano .', en: 'Last year I travelled to Peru with my brother.' },
+      { ex: 'Después , tomamos un autobús a Cusco=name .', en: 'Then we took a bus to Cusco.' },
+      { tip: 'Time words like ayer, el año pasado and después are a hint that the preterite is coming.' },
+    ],
+    drills: [
+      { id: 'pt2-viaje', q: 'El año pasado , ___ a Perú=name con mi hermano .', en: 'Last year I travelled to Peru with my brother.', answer: 'viajé', choices: ['viajé', 'viajo', 'viajó'], note: 'I travelled: viajé.' },
+      { id: 'pt2-visitamos', q: 'Primero , ___ Lima=name , la capital .', en: 'First, we visited Lima, the capital.', answer: 'visitamos', choices: ['visitamos', 'visité', 'visitó'], note: 'We visited: visitamos.' },
+      { id: 'pt2-tomamos', q: 'Después , ___ un autobús a Cusco=name .', en: 'Then we took a bus to Cusco.', answer: 'tomamos', choices: ['tomamos', 'tomé', 'toma'], note: 'We took: tomamos.' },
+      { id: 'pt2-vi', q: '___ las montañas y me quedé sin palabras .', en: 'I saw the mountains and was left speechless.', answer: 'Vi', choices: ['Vi', 'Veo', 'Vio'], note: 'I saw: vi.' },
+    ],
+  },
+  {
+    id: 'ir-a',
+    title: 'voy a + a verb',
+    summary: 'Talking about plans: "I\'m going to…".',
+    story: 'e28',
+    body: [
+      'For plans, use **ir a** and a verb in its dictionary form, just like "going to" in English.',
+      { table: [['', 'ir a'], ['I', 'voy a'], ['you', 'vas a'], ['he, she', 'va a'], ['we', 'vamos a']], head: true },
+      { ex: 'Hoy vamos a hacer una sopa de verduras .', en: "Today we're going to make vegetable soup." },
+      { tip: 'Vamos on its own means "let\'s go!". Vamos a + verb can also mean "let\'s…".' },
+    ],
+    drills: [
+      { id: 'ira-vamos', q: 'Hoy ___ a hacer una sopa de verduras .', en: "Today we're going to make vegetable soup.", answer: 'vamos', choices: ['vamos', 'voy', 'van'], note: 'We: vamos a.' },
+      { id: 'ira-a', q: 'Hoy vamos ___ hacer una sopa de verduras .', en: "Today we're going to make vegetable soup.", answer: 'a', choices: ['a', 'de', 'en'], note: 'ir a + verb. Don\'t forget the a.' },
+      { id: 'ira-voy', q: '___ a estudiar ingeniería .', en: "I'm going to study engineering.", answer: 'Voy', choices: ['Voy', 'Va', 'Vamos'], note: 'I: voy a.' },
+    ],
+  },
+  {
+    id: 'commands',
+    title: 'Telling a friend what to do',
+    summary: 'Commands with tú, as in a recipe.',
+    story: 'e28',
+    body: [
+      'To tell a friend (tú) to do something, use the same form as "he / she does": **corta**, **agrega**, **espera**.',
+      { ex: 'Primero , corta la cebolla , el ajo y las papas .', en: 'First, cut the onion, the garlic and the potatoes.' },
+      { ex: 'Agrega las verduras y espera diez minutos .', en: 'Add the vegetables and wait ten minutes.' },
+      'Some common verbs have short forms of their own:',
+      { table: [['Verb', 'Command'], ['poner', 'pon'], ['hacer', 'haz'], ['ir', 've'], ['venir', 'ven'], ['tener', 'ten']], head: true },
+      { tip: 'Usted (the polite you) has different commands, which you\'ll meet later.' },
+    ],
+    drills: [
+      { id: 'cmd-corta', q: 'Primero , ___ la cebolla , el ajo y las papas .', en: 'First, cut the onion, the garlic and the potatoes.', answer: 'corta', choices: ['corta', 'corto', 'cortar'], note: 'A command to a friend: corta.' },
+      { id: 'cmd-pon', q: 'Luego , ___ un poco de aceite en la olla .', en: 'Then put a little oil in the pot.', answer: 'pon', choices: ['pon', 'pongo', 'poner'], note: 'poner has a short command: pon.' },
+      { id: 'cmd-agrega', q: '___ las verduras y espera diez minutos .', en: 'Add the vegetables and wait ten minutes.', answer: 'Agrega', choices: ['Agrega', 'Agrego', 'Agregar'], note: 'A command to a friend: agrega.' },
+      { id: 'cmd-espera', q: 'Agrega las verduras y ___ diez minutos .', en: 'Add the vegetables and wait ten minutes.', answer: 'espera', choices: ['espera', 'espero', 'esperar'], note: 'A command to a friend: espera.' },
+    ],
+  },
+];
+
+export default { id: '03-routines', title: 'Routines and errands', vocab, moreForms, grammar, stories, lessons };

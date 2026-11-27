@@ -417,4 +417,107 @@ const stories = [
   },
 ];
 
-export default { id: '04-people', title: 'People and plans', vocab, moreForms, grammar, stories };
+// Grammar lessons: see 01-basics.js and CONTENT.md. Never rename or remove ids.
+const lessons = [
+  {
+    id: 'imperfect',
+    title: 'The imperfect: era, vivía',
+    summary: 'The past for how things used to be.',
+    story: 'e35',
+    body: [
+      'The **imperfect** describes the past as a background: how things were, and what used to happen again and again.',
+      { table: [['', '-ar (jugar)', '-er / -ir (vivir)', 'ser', 'ir'], ['I, he, she', 'jugaba', 'vivía', 'era', 'iba'], ['we', 'jugábamos', 'vivíamos', 'éramos', 'íbamos'], ['they', 'jugaban', 'vivían', 'eran', 'iban']], head: true },
+      { ex: 'Cuando era niño , vivía en un pueblo pequeño .', en: 'When I was a boy, I lived in a small village.' },
+      { ex: 'Todos_los_días jugaba con mis hermanos en el campo .', en: 'Every day I played with my brothers and sisters in the fields.' },
+      'Use the preterite for one finished event (ayer fui al cine) and the imperfect for habits and descriptions (los domingos íbamos al río).',
+      { tip: 'había is the past of hay: "there was / there were".' },
+    ],
+    drills: [
+      { id: 'imp-era', q: 'Cuando ___ niño , vivía en un pueblo pequeño .', en: 'When I was a boy, I lived in a small village.', answer: 'era', choices: ['era', 'fui', 'soy'], note: 'Describing a time of life: imperfect era.' },
+      { id: 'imp-vivia', q: 'Cuando era niño , ___ en un pueblo pequeño .', en: 'When I was a boy, I lived in a small village.', answer: 'vivía', choices: ['vivía', 'viví', 'vivo'], note: 'A background state in the past: vivía.' },
+      { id: 'imp-jugaba', q: 'Todos_los_días ___ con mis hermanos en el campo .', en: 'Every day I played with my brothers and sisters in the fields.', answer: 'jugaba', choices: ['jugaba', 'jugué', 'juego'], note: 'Every day = a habit: imperfect.' },
+      { id: 'imp-habia', q: 'No ___ televisión en casa .', en: 'There was no TV at home.', answer: 'había', choices: ['había', 'hay', 'era'], note: 'The past of hay: había.' },
+      { id: 'imp-ibamos', q: 'Los domingos , ___ al río .', en: 'On Sundays, we went to the river.', answer: 'íbamos', choices: ['íbamos', 'vamos', 'fui'], note: 'Every Sunday = a habit: íbamos.' },
+    ],
+  },
+  {
+    id: 'deberias',
+    title: 'Advice: deberías',
+    summary: 'Saying what someone should or shouldn\'t do.',
+    story: 'e37',
+    body: [
+      '**Deberías** + a verb is a friendly "you should". Put **no** in front for "you shouldn\'t".',
+      { ex: 'Deberías dormir más .', en: 'You should sleep more.' },
+      { ex: 'Y no deberías tomar café después de las seis .', en: "And you shouldn't drink coffee after six." },
+      '**Es mejor** + a verb, "it\'s better to…", is another soft way to give advice.',
+      { ex: 'También es mejor hacer ejercicio .', en: "It's also better to get some exercise." },
+      { tip: '¿Por qué no…? "Why don\'t you…?" makes a suggestion sound like an invitation.' },
+    ],
+    drills: [
+      { id: 'deb-dormir', q: 'Deberías ___ más .', en: 'You should sleep more.', answer: 'dormir', choices: ['dormir', 'duermes', 'duerme'], note: 'After deberías, the verb stays in its dictionary form.' },
+      { id: 'deb-no', q: 'Y no ___ tomar café después de las seis .', en: "And you shouldn't drink coffee after six.", answer: 'deberías', choices: ['deberías', 'tomas', 'quieres'], note: 'no deberías = you shouldn\'t.' },
+      { id: 'deb-mejor', q: 'También es ___ hacer ejercicio .', en: "It's also better to get some exercise.", answer: 'mejor', choices: ['mejor', 'peor', 'más'], note: 'es mejor = it\'s better.' },
+      { id: 'deb-corres', q: '¿ Por_qué no ___ conmigo por las mañanas ?', en: "Why don't you run with me in the mornings?", answer: 'corres', choices: ['corres', 'corro', 'correr'], note: 'You (tú): corres.' },
+    ],
+  },
+  {
+    id: 'future',
+    title: 'The future: trabajaré',
+    summary: 'Saying what will happen.',
+    story: 'e38',
+    body: [
+      'The simple future adds endings to the whole dictionary form: trabajar → **trabajaré**. The endings are the same for -ar, -er and -ir verbs.',
+      { table: [['', 'trabajar', 'ser', 'ver'], ['I', 'trabajaré', 'seré', 'veré'], ['you', 'trabajarás', 'serás', 'verás'], ['he, she', 'trabajará', 'será', 'verá'], ['we', 'trabajaremos', 'seremos', 'veremos']], head: true },
+      { ex: 'Después , trabajaré en otro país .', en: "After that, I'll work in another country." },
+      { ex: 'Seré profesora de inglés .', en: "I'll be an English teacher." },
+      { tip: 'In conversation, voy a + verb is more common for plans. The future sounds more certain or more distant.' },
+    ],
+    drills: [
+      { id: 'fut-trabajare', q: 'Después , ___ en otro país .', en: "After that, I'll work in another country.", answer: 'trabajaré', choices: ['trabajaré', 'trabajo', 'trabajé'], note: 'I will work: trabajaré.' },
+      { id: 'fut-sere', q: '___ profesora de inglés .', en: "I'll be an English teacher.", answer: 'Seré', choices: ['Seré', 'Soy', 'Fui'], note: 'I will be: seré.' },
+      { id: 'fut-viajare', q: 'Y ___ por todo el mundo .', en: "And I'll travel all over the world.", answer: 'viajaré', choices: ['viajaré', 'viajé', 'viajo'], note: 'I will travel: viajaré.' },
+      { id: 'fut-veremos', q: '¡ Entonces , un día nos ___ en Japón=name !', en: "Then one day we'll see each other in Japan!", answer: 'veremos', choices: ['veremos', 'vemos', 'vimos'], note: 'We will see: veremos.' },
+    ],
+  },
+  {
+    id: 'saber-poder',
+    title: 'sé nadar: saber and poder',
+    summary: 'Two ways to say "can".',
+    story: 'e40',
+    body: [
+      '**saber** + a verb is "can" in the sense of a skill you have learned: swimming, driving, playing the piano.',
+      { ex: 'Sí , sé nadar , pero no muy bien .', en: 'Yes, I can swim, but not very well.' },
+      '**poder** + a verb is "can" in the sense of being able to, or being allowed to, right now.',
+      { ex: '¡ Yo te puedo enseñar !', en: 'I can teach you!' },
+      { table: [['', 'saber', 'poder'], ['I', 'sé', 'puedo'], ['you', 'sabes', 'puedes'], ['he, she', 'sabe', 'puede']], head: true },
+      { tip: 'Sé (I know) has an accent. Se without one is the little word in se llama.' },
+    ],
+    drills: [
+      { id: 'sp-sabes', q: 'Tomás=name , ¿ ___ nadar ?', en: 'Tomás, can you swim?', answer: 'sabes', choices: ['sabes', 'sé', 'sabe'], note: 'A skill, asked to a friend: ¿sabes…?' },
+      { id: 'sp-se', q: 'Sí , ___ nadar , pero no muy bien .', en: 'Yes, I can swim, but not very well.', answer: 'sé', choices: ['sé', 'sabe', 'sabes'], note: 'I know how: sé.' },
+      { id: 'sp-sabe', q: 'Mi hermana ___ tocar el piano .', en: 'My sister can play the piano.', answer: 'sabe', choices: ['sabe', 'sé', 'sabes'], note: 'A learned skill, she: sabe.' },
+      { id: 'sp-puedo', q: '¡ Yo te ___ enseñar !', en: 'I can teach you!', answer: 'puedo', choices: ['puedo', 'puede', 'puedes'], note: 'Being able to, I: puedo.' },
+    ],
+  },
+  {
+    id: 'si-present',
+    title: 'si + the present',
+    summary: '"If" for things that may really happen.',
+    story: 'e41',
+    body: [
+      'For a real possibility, use **si** with the present tense, and the future (or present) for the result.',
+      { ex: 'Si mañana hace sol , iremos a la playa .', en: "If it's sunny tomorrow, we'll go to the beach." },
+      { ex: 'Si llueve , iremos al museo .', en: "If it rains, we'll go to the museum." },
+      { tip: 'Even when it is about tomorrow, the si part stays in the present: si llueve, not si lloverá. English does the same: "if it rains".' },
+      'Si without an accent means "if". Sí with an accent means "yes".',
+    ],
+    drills: [
+      { id: 'si-hace', q: 'Si mañana ___ sol , iremos a la playa .', en: "If it's sunny tomorrow, we'll go to the beach.", answer: 'hace', choices: ['hace', 'hará', 'hizo'], note: 'After si, use the present: hace.' },
+      { id: 'si-iremos', q: 'Si llueve , ___ al museo .', en: "If it rains, we'll go to the museum.", answer: 'iremos', choices: ['iremos', 'fuimos', 'íbamos'], note: 'The result is in the future: iremos.' },
+      { id: 'si-tengo', q: 'Si ___ dinero el próximo mes , compraré una bicicleta .', en: "If I have money next month, I'll buy a bicycle.", answer: 'tengo', choices: ['tengo', 'tendré', 'tenía'], note: 'After si, use the present: tengo.' },
+      { id: 'si-quieres', q: 'Si ___ , te presto mi bicicleta vieja .', en: "If you like, I'll lend you my old bike.", answer: 'quieres', choices: ['quieres', 'quiero', 'quiere'], note: 'You (tú): quieres.' },
+    ],
+  },
+];
+
+export default { id: '04-people', title: 'People and plans', vocab, moreForms, grammar, stories, lessons };

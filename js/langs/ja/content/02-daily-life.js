@@ -437,6 +437,114 @@ const stories = [
   },
 ];
 
+// Grammar lessons: see 01-foundations.js and CONTENT.md. Never rename or remove ids.
+const lessons = [
+  {
+    id: 'kara-made',
+    title: 'から, まで and ごろ',
+    summary: 'From, until, and "around" a time.',
+    story: 's13',
+    body: [
+      '**から** means "from" and **まで** means "until" or "as far as". Both go after the time or place.',
+      { ex: '学校[がっこう] は 九時[くじ] から 三時[さんじ] まで です 。', en: 'School is from nine to three.' },
+      'から also marks distance: 駅[えき] から ちかい is "close to the station" (close, counting from the station).',
+      { ex: 'ゆき=name さん の 学校[がっこう] は 駅[えき] から ちかい です 。', en: "Yuki's school is close to the station." },
+      '**ごろ** after a clock time means "around". It replaces に.',
+      { ex: '七時[しちじ] ごろ うち に 帰[かえ]ります 。', en: 'She gets home around seven.' },
+      { tip: 'For "about" with an amount (twenty minutes, five cups) use ぐらい instead. ごろ is only for points in time.' },
+    ],
+    drills: [
+      { id: 'km-kara', q: '学校[がっこう] は 九時[くじ] ___ 三時[さんじ] まで です 。', en: 'School is from nine to three.', answer: 'から', choices: ['から', 'まで', 'に'], note: 'から is "from".' },
+      { id: 'km-made', q: '学校[がっこう] は 九時[くじ] から 三時[さんじ] ___ です 。', en: 'School is from nine to three.', answer: 'まで', choices: ['まで', 'から', 'ごろ'], note: 'まで is "until".' },
+      { id: 'km-chikai', q: 'ゆき=name さん の 学校[がっこう] は 駅[えき] ___ ちかい です 。', en: "Yuki's school is close to the station.", answer: 'から', choices: ['から', 'まで', 'で'], note: 'Japanese says "close from the station": 駅[えき] から ちかい.' },
+      { id: 'km-goro', q: '七時[しちじ] ___ うち に 帰[かえ]ります 。', en: 'She gets home around seven.', answer: 'ごろ', choices: ['ごろ', 'から', 'まで'], note: 'ごろ after a time means "around".' },
+    ],
+  },
+  {
+    id: 'invite',
+    title: 'Let\'s: ませんか and ましょう',
+    summary: 'Inviting someone and saying yes.',
+    story: 's15',
+    body: [
+      'To invite someone, ask a negative question: **〜ませんか**, "won\'t you…?". It sounds polite and gentle.',
+      { ex: 'いっしょに えいが を 見[み]ません か 。', en: 'Would you like to see a movie together?' },
+      'To say "let\'s", change ます to **ましょう**. It is also how you say yes to an invitation.',
+      { ex: 'いい です ね 。 見[み]ましょう ！', en: "Sounds good. Let's!" },
+      { table: [['ます form', 'Won\'t you…?', 'Let\'s'], ['見[み]ます', '見[み]ません か', '見[み]ましょう'], ['いきます', 'いきません か', 'いきましょう'], ['あいます', 'あいません か', 'あいましょう']], head: true },
+      { tip: 'いっしょに "together" often comes with both.' },
+    ],
+    drills: [
+      { id: 'inv-masenka', q: 'いっしょに えいが を ___ か 。', en: 'Would you like to see a movie together?', answer: '見[み]ません', choices: ['見[み]ません', '見[み]ました', '見[み]ましょう'], note: '〜ませんか, "won\'t you…?", is a polite invitation.' },
+      { id: 'inv-mashou', q: 'いい です ね 。 ___ ！', en: "Sounds good. Let's (see it)!", answer: '見[み]ましょう', choices: ['見[み]ましょう', '見[み]ません', '見[み]ました'], note: 'ましょう is "let\'s".' },
+      { id: 'inv-meet', q: 'じゃあ 、 駅[えき] の まえ で ___ 。', en: "Then let's meet in front of the station.", answer: 'あいましょう', choices: ['あいましょう', 'あいました', 'あいません'], note: 'あいます → あいましょう, "let\'s meet".' },
+      { id: 'inv-go', q: 'じゃあ 、 いっしょに ___ ！', en: "Then let's go together!", answer: 'いきましょう', choices: ['いきましょう', 'いきました', 'いきたい'], note: 'いきます → いきましょう.' },
+      { id: 'inv-walk', q: 'こうえん で さんぽ を ___ 。', en: "Let's take a walk in the park.", answer: 'しましょう', choices: ['しましょう', 'しました', 'しません'], note: 'します → しましょう.' },
+    ],
+  },
+  {
+    id: 'te-form',
+    title: 'The て-form: ください and います',
+    summary: 'Asking someone to do something, and saying what is going on now.',
+    story: 's16',
+    body: [
+      'The **て-form** is a verb shape that links to other words. Two uses come up all the time: **〜て ください** "please do…" and **〜て います** "is doing…".',
+      { ex: 'この くすり を のんで ください 。', en: 'Please take this medicine.' },
+      { ex: '今[いま] 、 ねこ は ベッド の うえ で ねて います 。', en: 'Right now the cat is sleeping on the bed.' },
+      'Verbs like たべる, ねる and みる just swap ます for て. For the others, the sound before ます decides:',
+      { table: [['ます form', 'て-form'], ['たべます', 'たべて'], ['ねます', 'ねて'], ['のみます / やすみます', 'のんで / やすんで'], ['かきます', 'かいて'], ['かいます / とります', 'かって / とって'], ['はなします', 'はなして'], ['します / きます', 'して / きて']], head: true },
+      { tip: 'One odd one out: いきます becomes いって, not いいて.' },
+      '〜て います also covers habits and states: 日本語[にほんご] を べんきょうして います, "I\'m studying Japanese (these days)".',
+    ],
+    drills: [
+      { id: 'te-nonde', q: 'この くすり を ___ ください 。', en: 'Please take this medicine.', answer: 'のんで', choices: ['のんで', 'のみます', 'のみました'], note: 'のみます → のんで. ください needs the て-form.' },
+      { id: 'te-yasunde', q: 'きょう は うち で ゆっくり ___ ください 。', en: 'Rest well at home today.', answer: 'やすんで', choices: ['やすんで', 'やすみます', 'やすみました'], note: 'やすみます → やすんで.' },
+      { id: 'te-kite', q: 'マリア=name さん も 日本[にほん] へ ___ ください 。', en: 'Please come to Japan too, Maria.', answer: '来[き]て', choices: ['来[き]て', '来[き]ます', '来[き]ました'], note: '来[き]ます → 来[き]て.' },
+      { id: 'te-nete', q: '今[いま] 、 ねこ は ベッド の うえ で ___ います 。', en: 'Right now the cat is sleeping on the bed.', answer: 'ねて', choices: ['ねて', 'ねます', 'ねた'], note: '〜て います is "is doing right now".' },
+      { id: 'te-study', q: 'わたし は つくえ で 日本語[にほんご] を ___ います 。', en: "I'm studying Japanese at my desk.", answer: 'べんきょうして', choices: ['べんきょうして', 'べんきょうします', 'べんきょう'], note: 'します → して.' },
+    ],
+  },
+  {
+    id: 'adj-past',
+    title: 'Adjectives: was and isn\'t',
+    summary: 'The past and negative of い and な adjectives.',
+    story: 's18',
+    body: [
+      'An **い-adjective** changes its own ending. For the past, い becomes **かった**. For "not", い becomes **くない**. です stays at the end.',
+      { table: [['', 'い-adjective', 'な-adjective'], ['is', 'たかい です', 'きれい です'], ['is not', 'たかくない です', 'きれい じゃありません'], ['was', 'たかかった です', 'きれい でした']], head: true },
+      { ex: 'じゃあ 、 この くろい くつ は いかが です か 。 たかくない です よ 。', en: "Then how about these black ones? They aren't expensive." },
+      { ex: 'デパート は 人[ひと] が おおかった です が=ga-but 、 たのしかった です 。', en: 'The store was crowded, but it was fun.' },
+      '**な-adjectives** work like nouns: じゃありません for "not" and でした for "was".',
+      { tip: 'いい is irregular: よくない "not good", よかった "was good".' },
+    ],
+    drills: [
+      { id: 'ap-samui', q: 'きのう は とても ___ です 。', en: 'Yesterday it was very cold.', answer: 'さむかった', choices: ['さむかった', 'さむい', 'さむく'], note: 'Past: さむい → さむかった.' },
+      { id: 'ap-takakunai', q: 'この くろい くつ は ___ です よ 。', en: "These black shoes aren't expensive.", answer: 'たかくない', choices: ['たかくない', 'たかい', 'たかかった'], note: 'Not: たかい → たかくない.' },
+      { id: 'ap-ooi', q: 'デパート は 人[ひと] が ___ です 。', en: 'The store was crowded. (There were many people.)', answer: 'おおかった', choices: ['おおかった', 'おおい', 'おおくない'], note: 'Past: おおい → おおかった.' },
+      { id: 'ap-kirei', q: '京都[きょうと] の おてら は とても きれい ___ 。', en: 'The temples in Kyoto were very beautiful.', answer: 'でした', choices: ['でした', 'かった', 'です'], note: 'きれい is a な-adjective, so its past is きれい でした.' },
+      { id: 'ap-oishii', q: 'ごちそうさまでした 。 とても ___ です 。', en: 'Thank you for the meal. It was delicious.', answer: 'おいしかった', choices: ['おいしかった', 'おいしい', 'おいしくない'], note: 'Past: おいしい → おいしかった.' },
+    ],
+  },
+  {
+    id: 'past-negative',
+    title: 'Didn\'t: ませんでした',
+    summary: 'The polite past negative, for verbs and for です.',
+    story: 's19',
+    body: [
+      'Add **でした** to a negative to put it in the past.',
+      { table: [['', 'Now', 'Past'], ['verb', 'およぎません', 'およぎませんでした'], ['です', 'じゃありません', 'じゃありませんでした']], head: true },
+      { ex: 'あに は うみ で およぎました が=ga-but 、 わたし は およぎませんでした 。', en: "My brother swam in the sea, but I didn't." },
+      { ex: 'きょう の あさ 、 けん=name さん は げんき じゃありません でした 。', en: "This morning, Ken wasn't feeling well." },
+      { tip: 'ありません (there isn\'t / I don\'t have) works the same way: じかん が ありませんでした, "there was no time".' },
+    ],
+    drills: [
+      { id: 'pn-swim', q: 'あに は うみ で およぎました が=ga-but 、 わたし は ___ 。', en: "My brother swam in the sea, but I didn't.", answer: 'およぎませんでした', choices: ['およぎませんでした', 'およぎません', 'およぎました'], note: 'ません + でした = didn\'t.' },
+      { id: 'pn-genki', q: 'きょう の あさ 、 けん=name さん は げんき じゃありません ___ 。', en: "This morning, Ken wasn't feeling well.", answer: 'でした', choices: ['でした', 'です', 'ました'], note: 'じゃありません + でした = wasn\'t.' },
+      { id: 'pn-jikan', q: '富士山[ふじさん] に も いきたかった です が=ga-but 、 じかん が ___ 。', en: "I wanted to go to Mt. Fuji too, but we didn't have time.", answer: 'ありませんでした', choices: ['ありませんでした', 'ありません', 'ありました'], note: 'ありません + でした = there wasn\'t.' },
+      { id: 'pn-beer', q: 'ゆき=name さん は ビール を ___ か 。', en: "Don't you drink beer, Yuki?", answer: 'のみません', choices: ['のみません', 'のみませんでした', 'のみました'], note: 'This is about now, so no でした.' },
+    ],
+  },
+];
+
 export default {
   id: '02-daily-life',
   title: 'Daily life',
@@ -444,4 +552,5 @@ export default {
   moreForms,
   grammar,
   stories,
+  lessons,
 };

@@ -1,6 +1,6 @@
 // Saved progress (on this device) and the daily study queue.
 import { newCard, review, recall, dayKey, Rating, MIN } from './srs.js';
-import { LETTERS, WORDS, WORD_BY_ID, STORY_LIST, wordUnits } from './content.js';
+import { LETTERS, WORDS, WORD_BY_ID, STORY_LIST, STORY_BY_ID, LESSON_LIST, LESSON_BY_ID, wordUnits } from './content.js';
 
 // Progress is saved per language: hibi-ja, hibi-es, …
 let KEY = null;
@@ -16,7 +16,7 @@ const DEFAULT_SETTINGS = {
 };
 
 function blank() {
-  return { v: 1, cards: {}, settings: { ...DEFAULT_SETTINGS }, days: {}, lastNewKind: 'word', stories: {}, created: Date.now() };
+  return { v: 1, cards: {}, settings: { ...DEFAULT_SETTINGS }, days: {}, lastNewKind: 'word', stories: {}, lessons: {}, created: Date.now() };
 }
 
 export let state = blank();
@@ -67,12 +67,13 @@ export function addTime(ms) {
 // ---- card helpers -------------------------------------------------------
 
 export function cardKind(id) {
-  return { k: 'letter', r: 'recognize', p: 'produce', s: 'sentence' }[id[0]];
+  return { k: 'letter', r: 'recognize', p: 'produce', s: 'sentence', g: 'grammar' }[id[0]];
 }
 export const letterCardId = (kana) => `k:${kana}`;
 export const recogId = (wordId) => `r:${wordId}`;
 export const prodId = (wordId) => `p:${wordId}`;
 export const sentenceId = (storyId, line) => `s:${storyId}:${line}`;
+export const drillCardId = (drillId) => `g:${drillId}`;
 
 export function isKnownLetter(kana) { return !!state.cards[letterCardId(kana)]; }
 export function isLearnedWord(wordId) { return !!state.cards[recogId(wordId)]; }
@@ -274,4 +275,44 @@ export function strength(card) {
   if (!card) return 'none';
   if (card.state !== 'review') return 'learning';
   return card.s >= 21 ? 'strong' : 'review';
+}
+
+// ---- grammar lessons -------------------------------------------------------
+// A lesson is "ready" once you have started half the words in the story it prepares
+// you for, so you meet the grammar a little before the story becomes easy to read.
+
+export function lessonProgress(lesson) {
+  const story = STORY_BY_ID[lesson.story];
+  if (!story) return 1;
+  let total = 0; let started = 0;
+  for (const l of story.parsed) {
+    for (const t of l.tokens) {
+      if (t.kind !== 'word') continue;
+      total++;
+      if (isLearnedWord(t.id)) started++;
+    }
+  }
+  return total ? started / total : 1;
+}
+
+export const LESSON_READY = 0.5;
+export const lessonReady = (lesson) => lessonProgress(lesson) >= LESSON_READY;
+export const lessonDone = (id) => !!state.lessons?.[id];
+
+/** The first lesson you are ready for but haven't done yet. */
+export function nextLesson() {
+  return LESSON_LIST.find((l) => !lessonDone(l.id) && lessonReady(l)) || null;
+}
+
+/** Finish a lesson: its drills join your reviews as practice cards. */
+export function completeLesson(id) {
+  const lesson = LESSON_BY_ID[id];
+  if (!lesson) return 0;
+  (state.lessons ||= {})[id] = { done: Date.now() };
+  let added = 0;
+  for (const d of lesson.drills) {
+    if (!state.cards[drillCardId(d.id)]) { introduce(drillCardId(d.id), { countNew: false }); added++; }
+  }
+  save();
+  return added;
 }

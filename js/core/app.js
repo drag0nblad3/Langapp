@@ -3,7 +3,7 @@ import { Rating, describeInterval as describeIntervalFor } from './srs.js';
 import { speak, listen, record, similarity, languageVoices, setVoice, setSpeechLang, recognitionAvailable, ttsAvailable } from './speech.js';
 import {
   initContent, PACK, LETTER_GROUPS, LETTER_BY_UNIT, CONFUSE, WORDS, WORD_BY_ID, GRAMMAR_BY_ID,
-  STORY_LIST, STORY_BY_ID, exampleFor, wordUnits, romanize,
+  STORY_LIST, STORY_BY_ID, LESSON_LIST, LESSON_BY_ID, DRILL_BY_ID, exampleFor, wordUnits, romanize, parseRuby,
 } from './content.js';
 import { LANGUAGES, DEFAULT_LANGUAGE } from '../langs/index.js';
 
@@ -86,7 +86,7 @@ function startClock() { if (!activeSince) activeSince = Date.now(); }
 function stopClock() { if (activeSince) { S.addTime(Date.now() - activeSince); activeSince = null; } }
 document.addEventListener('visibilitychange', () => { if (document.hidden) stopClock(); else if (studying()) startClock(); });
 setInterval(() => { if (activeSince) { stopClock(); startClock(); } }, 30000);
-const studying = () => /^#\/(session|practice|read\/)/.test(location.hash);
+const studying = () => /^#\/(session|practice|read\/|grammar\/)/.test(location.hash);
 
 // ---------------------------------------------------------------- router
 
@@ -94,6 +94,8 @@ const routes = [
   [/^#\/?$|^#\/today$/, viewToday, 'today'],
   [/^#\/read$/, viewStories, 'read'],
   [/^#\/read\/(\w+)$/, viewReader, 'read'],
+  [/^#\/grammar$/, viewGrammar, 'grammar'],
+  [/^#\/grammar\/([\w-]+)$/, viewLesson, 'grammar'],
   [/^#\/progress$/, viewProgress, 'progress'],
   [/^#\/settings$/, viewSettings, 'settings'],
   [/^#\/session$/, viewSession, null],
@@ -183,6 +185,14 @@ function viewToday() {
       </div>
     </a>` : ''}
 
+    ${(() => {
+      const l = S.nextLesson();
+      return l ? `<a class="card story-rec lesson-rec" href="#/grammar/${l.id}">
+      <p class="eyebrow">New grammar lesson</p>
+      <div class="story-row"><div><h2>${titleHTML(l.title)}</h2><p class="muted">${esc(l.summary || '')}</p></div><span class="go">${icon('book', 22)}</span></div>
+    </a>` : '';
+    })()}
+
     <section class="stats">
       ${lettersTotal ? `<div class="stat"><b>${lettersKnown}<small>/${lettersTotal}</small></b><span>${esc(PACK.letters.name)}</span></div>` : ''}
       <div class="stat"><b>${wordsKnown}<small>/${WORDS.length}</small></b><span>words</span></div>
@@ -257,6 +267,7 @@ function showCard(c) {
   if (kind === 'recognize') return showRecognize(c);
   if (kind === 'produce') return showProduce(c);
   if (kind === 'sentence') return showSentence(c);
+  if (kind === 'grammar') return showDrill(c);
   // unknown card: drop it
   delete S.state.cards[c.id];
   S.save();
@@ -319,7 +330,8 @@ const MORE_NEW = 5;
 // --- extra practice: drill known cards without changing their schedule
 
 function viewPractice() {
-  const queue = S.practiceQueue();
+  const queue = pendingPractice || S.practiceQueue();
+  pendingPractice = null;
   if (!queue.length) { location.hash = '#/today'; return; }
   session = { practice: true, queue, total: queue.length, lastId: null, sinceNew: 0, done: 0, right: 0, startedAt: Date.now() };
   nextInSession();
@@ -423,7 +435,7 @@ function checkLetter(form) {
   resultScreen({ id, ok, given, right: `<span class="letter-mid tl">${esc(kana)}</span> = <b>${esc(k.answers[0])}</b>${k.answers.length > 1 ? ` <span class="muted">(also ${k.answers.slice(1).join(', ')})</span>` : ''}` });
 }
 
-function resultScreen({ id, ok, given, right, extra = '' }) {
+function resultScreen({ id, ok, given, right, extra = '', override = true }) {
   const card = S.state.cards[id];
   const describeInterval = session.practice ? () => '' : describeIntervalFor;
   const stage = $('.stage');
@@ -438,7 +450,7 @@ function resultScreen({ id, ok, given, right, extra = '' }) {
       ${ok
         ? `<button class="btn" data-action="rate" data-id="${esc(id)}" data-r="${Rating.Easy}">Too easy <small>${describeInterval(card, Rating.Easy)}</small></button>
            <button class="btn primary" data-default data-action="rate" data-id="${esc(id)}" data-r="${Rating.Good}">Continue <small>${describeInterval(card, Rating.Good)}</small></button>`
-        : `<button class="btn" data-action="rate" data-id="${esc(id)}" data-r="${Rating.Good}">I was right</button>
+        : `${override ? `<button class="btn" data-action="rate" data-id="${esc(id)}" data-r="${Rating.Good}">I was right</button>` : ''}
            <button class="btn primary" data-default data-action="rate" data-id="${esc(id)}" data-r="${Rating.Again}">Continue</button>`}
     </div>`;
   setTimeout(() => $('[data-default]')?.focus(), 50);
@@ -555,6 +567,122 @@ function focusAnswer() {
   setTimeout(() => $('.answer')?.focus(), 60);
 }
 
+// --- grammar drill (fill the gap: pick the right form)
+
+function blankLineHTML(tokens, fill = null) {
+  return lineHTML(tokens.map((t) => (t.kind === 'blank'
+    ? { ...t, kind: 'blank', plain: '___', segments: [{ t: fill || '＿＿＿' }] }
+    : t)));
+}
+
+function showDrill(c) {
+  const d = DRILL_BY_ID[c.id.slice(2)];
+  if (!d) { delete S.state.cards[c.id]; S.save(); return nextInSession(); }
+  const lesson = LESSON_BY_ID[d.lesson];
+  const order = d.choices.map((_, i) => i);
+  for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+  sessionFrame(`
+    <div class="flash drill">
+      <p class="sentence tl">${blankLineHTML(d.qTokens)}</p>
+      <p class="muted">${esc(d.en)}</p>
+      <div class="choices">
+        ${order.map((i) => `<button class="btn choice tl" data-action="pick" data-id="${esc(c.id)}" data-i="${i}">${rubyHTML(parseRuby(d.choices[i]).segments)}</button>`).join('')}
+      </div>
+    </div>
+  `, { label: `Grammar · ${titleText(lesson.title)}` });
+}
+
+function checkDrill(el) {
+  const id = el.dataset.id;
+  const d = DRILL_BY_ID[id.slice(2)];
+  const given = d.choices[+el.dataset.i];
+  const ok = given === d.answer;
+  speak(d.text, { rate: cfg().rate });
+  resultScreen({
+    id, ok, given: parseRuby(given).plain, override: false,
+    right: `<span class="tl sentence-sm">${lineHTML(d.tokens)}</span>`,
+    extra: `<p class="muted small">${esc(d.en)}</p>
+      ${d.note ? `<p class="note">${esc(d.note)}</p>` : ''}
+      <button class="btn ghost sm" data-action="say" data-text="${esc(d.text)}">${icon('play', 16)} Play</button>
+      <a class="muted small lesson-ref" href="#/grammar/${d.lesson}">Lesson: ${titleHTML(LESSON_BY_ID[d.lesson].title)}</a>`,
+  });
+}
+
+// ---------------------------------------------------------------- Grammar lessons
+
+let pendingPractice = null; // a lesson's drills, for "try them now"
+let lessonTokens = [];      // tokens of the examples on screen, for tap-to-look-up
+
+/** Lesson titles may hold target-language text with ruby: "The て-form", "ser vs estar". */
+function titleHTML(title) { return rubyHTML(parseRuby(title).segments); }
+function titleText(title) { return parseRuby(title).plain; }
+
+/** Lesson paragraphs: **bold** marks target-language words, and ruby markup works as in titles. */
+function proseHTML(text) {
+  return text.split('**').map((part, i) => {
+    const html = rubyHTML(parseRuby(part).segments);
+    return i % 2 ? `<b class="tl">${html}</b>` : html;
+  }).join('');
+}
+
+function viewGrammar() {
+  const next = S.nextLesson();
+  app.innerHTML = `
+    <header class="top"><div><p class="eyebrow">Short lessons</p><h1>Grammar</h1></div></header>
+    <p class="muted lead">Each lesson explains one point with examples. A lesson opens up once you know half the words of the story it goes with. Finish it, and its fill-in-the-blank cards join your daily reviews.</p>
+    <div class="list">
+      ${LESSON_LIST.map((l, i) => {
+        const done = S.lessonDone(l.id);
+        const ready = S.lessonReady(l);
+        const state = done ? 'done' : l === next ? 'next' : ready ? 'ready' : 'later';
+        return `<a class="card story-item lesson-item ${state}" href="#/grammar/${l.id}">
+          <span class="num">${i + 1}</span>
+          <div class="grow"><h2>${titleHTML(l.title)}</h2><p class="muted">${esc(l.summary || '')}</p></div>
+          ${done ? `<span class="read-mark" title="Done">${icon('check', 18)}</span>` : l === next ? '<span class="cov good">Next</span>' : ready ? '' : `<span class="cov hard" title="Words you know from its story">${Math.round(S.lessonProgress(l) * 100)}%<small>of words</small></span>`}
+        </a>`;
+      }).join('')}
+    </div>`;
+}
+
+function viewLesson(id) {
+  const l = LESSON_BY_ID[id];
+  if (!l) { location.hash = '#/grammar'; return; }
+  const story = STORY_BY_ID[l.story];
+  const done = S.lessonDone(l.id);
+  lessonTokens = [];
+  const body = l.body.map((b) => {
+    if (typeof b === 'string') return `<p>${proseHTML(b)}</p>`;
+    if (b.ex) {
+      const i = lessonTokens.push(b.tokens) - 1;
+      const text = b.tokens.map((t) => t.plain).join(PACK.usesSpaces ? ' ' : '');
+      return `<div class="example">
+        <button class="icon-btn sm" data-action="say" data-text="${esc(text)}" aria-label="Play">${icon('play', 16)}</button>
+        <div><p class="tl">${lineHTML(b.tokens, (j) => `data-action="ltok" data-i="${i}" data-t="${j}"`)}</p><p class="muted small">${esc(b.en)}</p></div>
+      </div>`;
+    }
+    if (b.table) {
+      return `<table class="gtable">${b.table.map((row, r) => `<tr>${row.map((cell) => (r === 0 && b.head ? `<th>${proseHTML(cell)}</th>` : `<td class="tl">${rubyHTML(parseRuby(cell).segments)}</td>`)).join('')}</tr>`).join('')}</table>`;
+    }
+    if (b.tip) return `<p class="note">${proseHTML(b.tip)}</p>`;
+    return '';
+  }).join('');
+  app.innerHTML = `
+    <header class="top reader-top">
+      <a class="icon-btn" href="#/grammar" aria-label="Back">${icon('back')}</a>
+      <div class="grow"><p class="eyebrow">Grammar</p><h1>${titleHTML(l.title)}</h1>${l.summary ? `<p class="muted">${esc(l.summary)}</p>` : ''}</div>
+    </header>
+    <article class="lesson">${body}</article>
+    ${story ? `<a class="card lesson-link" href="#/read/${story.id}">${icon('book', 18)}<span class="grow">See it in a story: <b class="tl">${lineHTML(story.titleTokens)}</b></span>${coverageBadge(S.storyCoverage(story))}</a>` : ''}
+    <div class="reader-end">
+      <p class="muted small">${l.drills.length} practice cards: pick the word that fits the gap.</p>
+      ${done
+        ? `<p class="done-msg">${icon('check', 18)} Done. Its cards are in your reviews.</p>
+           <button class="btn wide" data-action="lessonpractice" data-id="${l.id}">${icon('refresh', 18)} Practise these now</button>`
+        : `<button class="btn primary big" data-action="lessondone" data-id="${l.id}">Add ${l.drills.length} cards to my reviews</button>
+           <button class="btn wide" data-action="lessonpractice" data-id="${l.id}">${icon('refresh', 18)} Add them and practise now</button>`}
+    </div>`;
+}
+
 // ---------------------------------------------------------------- Stories
 
 function viewStories() {
@@ -591,6 +719,7 @@ function viewReader(id) {
       ${PACK.rubyBase ? `<button class="btn ghost sm" data-action="toggle" data-key="furigana">${cfg().furigana ? 'Hide' : 'Show'} ${esc(PACK.rubyName)}</button>` : ''}
       <button class="btn ghost sm" data-action="toggleEN">${icon('eye', 16)} English</button>
     </div>
+    ${LESSON_LIST.filter((l) => l.story === s.id).map((l) => `<a class="card lesson-link" href="#/grammar/${l.id}">${icon('book', 18)}<span class="grow">Grammar lesson: <b>${titleHTML(l.title)}</b></span>${S.lessonDone(l.id) ? icon('check', 18) : ''}</a>`).join('')}
     ${s.grammar?.length ? `<details class="card grammar"><summary>Grammar in this story</summary>
       <dl>${s.grammar.map(([a, b]) => `<dt class="tl">${esc(a)}</dt><dd>${esc(b)}</dd>`).join('')}</dl>
     </details>` : ''}
@@ -854,6 +983,18 @@ const actions = {
     nextInSession();
   },
   reveal: (el) => reveal(el.dataset.id),
+  pick: (el) => checkDrill(el),
+  ltok: (el) => showTokenSheet(lessonTokens[+el.dataset.i][+el.dataset.t]),
+  lessondone: (el) => {
+    const n = S.completeLesson(el.dataset.id);
+    toast(n ? `${n} practice cards added to your reviews` : 'Lesson done');
+    route();
+  },
+  lessonpractice: (el) => {
+    S.completeLesson(el.dataset.id);
+    pendingPractice = LESSON_BY_ID[el.dataset.id].drills.map((d) => S.drillCardId(d.id));
+    location.hash = '#/practice';
+  },
   rate: (el) => finishCard(el.dataset.id, Number(el.dataset.r)),
   learnmore: () => {
     S.addExtraNew(MORE_NEW);
