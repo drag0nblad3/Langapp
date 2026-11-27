@@ -1,6 +1,8 @@
 // Spanish language pack (Latin American Spanish, ustedes rather than vosotros).
 import basics from './content/01-basics.js';
 import dailyLife from './content/02-daily-life.js';
+import routines from './content/03-routines.js';
+import people from './content/04-people.js';
 
 const ARTICLE = /^(el|la|los|las|un|una)\s+/;
 const stripAccents = (s) => s.normalize('NFD').replace(/[̀-́̈]/g, '').normalize('NFC');
@@ -45,7 +47,7 @@ export default {
     return p;
   },
 
-  content: [basics, dailyLife],
+  content: [basics, dailyLife, routines, people],
 
   ui: {
     welcome: '¡Bienvenido!',
