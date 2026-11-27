@@ -236,6 +236,20 @@ function coverageBadge(c) {
 
 let session = null;
 
+// Ignore answer taps for a moment after an answer and after a new card appears,
+// so a double tap (or a tap meant for the old card) can't answer the next one.
+const ANSWER_COOLDOWN_MS = 600;
+const ANSWER_ACTIONS = new Set(['taught', 'reveal', 'pick', 'rate', 'checkLetter', 'checkProduce', 'checkConj']);
+let answerHoldUntil = 0;
+function holdAnswers() { answerHoldUntil = Date.now() + ANSWER_COOLDOWN_MS; }
+/** True (and starts a new cooldown) if an answer action may run now. */
+function answerAllowed(action) {
+  if (!ANSWER_ACTIONS.has(action)) return true;
+  if (Date.now() < answerHoldUntil) return false;
+  holdAnswers();
+  return true;
+}
+
 function viewSession() {
   S.addDailyExtras();
   session = { lastId: null, sinceNew: 0, done: 0, startedAt: Date.now() };
@@ -274,6 +288,7 @@ function sessionFrame(inner, { label = '' } = {}) {
 }
 
 function nextInSession() {
+  holdAnswers();
   if (session.practice) {
     let id;
     while ((id = session.queue.shift()) && !S.state.cards[id]);
@@ -1320,11 +1335,14 @@ document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-action]');
   if (!el || el.tagName === 'FORM' || el.tagName === 'INPUT') return;
   const fn = actions[el.dataset.action];
-  if (fn) { e.preventDefault(); fn(el); }
+  if (!fn) return;
+  e.preventDefault();
+  if (answerAllowed(el.dataset.action)) fn(el);
 });
 document.addEventListener('submit', (e) => {
   const f = e.target;
   e.preventDefault();
+  if (!answerAllowed(f.dataset.action)) return;
   if (f.dataset.action === 'checkLetter') checkLetter(f);
   if (f.dataset.action === 'checkProduce') checkProduce(f);
   if (f.dataset.action === 'checkConj') checkConj(f);
