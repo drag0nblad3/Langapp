@@ -13,6 +13,7 @@ Hibi has no AI built in. New words and stories are written in a Claude Code sess
 
 - **Never rename, remove or reorder published ids**: word ids, story ids, letter units, or story lines. Saved cards point to them (`r:<wordId>`, `p:<wordId>`, `s:<storyId>:<lineIndex>`). Fixing a typo inside a line is fine. Append new lines at the end of a story only. `ids.lock.json` enforces this.
 - **Add new content as a new pack file** (`js/langs/<lang>/content/NN-topic.js`) and append it to `content` in `js/langs/<lang>/index.js`. Don't grow old packs, except to fix mistakes.
+- **New forms of old words** go in the new pack's `moreForms` (`{ wordId: { form: gloss } }`), not in the old pack. The validator warns when two entries claim the same text, because a plain story token can then only reach one of them.
 - **Every story token must resolve** to a word, a conjugated `form` of a word, a grammar entry, `=name`, or an inline `="gloss"`. Keep one-off glosses rare: if a word is useful, add it to the vocab.
 - **Comprehensible input**: a story should be ≥90% known once the learner has started the words that come before it in vocab order. The validator prints "90% known after N words". Introduce only a few new words per story, and reuse earlier words often.
 - **Accuracy**: natural, standard language at the learner's level. Translations should be faithful, not literal word salad.
@@ -52,7 +53,10 @@ const stories = [
   },
 ];
 
-export default { id: '02-travel', title: 'Travel', vocab, grammar, stories };
+// Conjugations of words from earlier packs that this pack's stories use.
+const moreForms = { iku: { 'いきません': 'don\'t go (polite)' } };
+
+export default { id: '02-travel', title: 'Travel', vocab, moreForms, grammar, stories };
 ```
 
 ### Token markup (story lines and titles)

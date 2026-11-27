@@ -41,6 +41,9 @@ dupes(allGrammar.map((g) => g.id), 'grammar');
 dupes(allStories.map((s) => s.id), 'story');
 dupes(pack.content.map((c) => c.id), 'content pack');
 for (const id of allVocab.map((v) => v.id)) if (C.GRAMMAR_BY_ID[id]) err(`Id "${id}" is both a word and a grammar entry`);
+for (const c of pack.content) {
+  for (const id of Object.keys(c.moreForms || {})) if (!C.WORD_BY_ID[id]) err(`Pack "${c.id}" adds moreForms to "${id}", which is not a word`);
+}
 
 // ---- words
 const readings = new Map();
@@ -52,6 +55,21 @@ for (const w of C.WORDS) {
   readings.set(w.reading, w.id);
   if (pack.letters) {
     for (const u of C.wordUnits(w)) if (!C.LETTER_BY_UNIT[u]) err(`Word "${w.id}" uses "${u}", which no letter card teaches`);
+  }
+}
+
+// ---- lookup keys: two entries claiming the same text make story tokens resolve to only one
+// of them (the later word wins), which can silently change the meaning of earlier stories.
+const claimed = new Map();
+for (const g of allGrammar) if (g.text && !claimed.has(g.text)) claimed.set(g.text, `grammar "${g.id}"`);
+for (const w of C.WORDS) {
+  const keys = new Set([w.plain, w.reading]);
+  for (const k of Object.keys(w.forms || {})) { const f = C.parseRuby(k); keys.add(f.plain); keys.add(f.reading); }
+  for (let k of keys) {
+    if (pack.usesSpaces) k = k.toLowerCase();
+    const prev = claimed.get(k);
+    if (prev && prev !== `word "${w.id}"`) warn(`"${k}" is claimed by both ${prev} and word "${w.id}"; plain story tokens get "${w.id}" (use =id to pick)`);
+    claimed.set(k, `word "${w.id}"`);
   }
 }
 
