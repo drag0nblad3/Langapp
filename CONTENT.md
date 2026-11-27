@@ -11,7 +11,7 @@ Hibi has no AI built in. New words and stories are written in a Claude Code sess
 
 ## Rules (for whoever writes content)
 
-- **Never rename, remove or reorder published ids**: word ids, story ids, letter units, or story lines. Saved cards point to them (`r:<wordId>`, `p:<wordId>`, `s:<storyId>:<lineIndex>`). Fixing a typo inside a line is fine. Append new lines at the end of a story only. `ids.lock.json` enforces this.
+- **Never rename, remove or reorder published ids**: word ids, story ids, letter units, story lines, lesson ids, drill ids, kanji, or verb forms. Saved cards point to them (`r:<wordId>`, `p:<wordId>`, `s:<storyId>:<lineIndex>`, `l:<storyId>:<lineIndex>`, `g:<drillId>`, `c:<wordId>:<form>`, `h:<kanji>`). Fixing a typo inside a line is fine. Append new lines at the end of a story only. `ids.lock.json` enforces this.
 - **Add new content as a new pack file** (`js/langs/<lang>/content/NN-topic.js`) and append it to `content` in `js/langs/<lang>/index.js`. Don't grow old packs, except to fix mistakes.
 - **New forms of old words** go in the new pack's `moreForms` (`{ wordId: { form: gloss } }`), not in the old pack. The validator warns when two entries claim the same text, because a plain story token can then only reach one of them.
 - **Every story token must resolve** to a word, a conjugated `form` of a word, a grammar entry, `=name`, or an inline `="gloss"`. Keep one-off glosses rare: if a word is useful, add it to the vocab.
@@ -19,6 +19,9 @@ Hibi has no AI built in. New words and stories are written in a Claude Code sess
 - **Accuracy**: natural, standard language at the learner's level. Translations should be faithful, not literal word salad.
   - Japanese: polite です/ます style at beginner level, furigana on every kanji, katakana for loanwords, readings in kana only.
   - Spanish: Latin American usage (ustedes, not vosotros; pesos). Nouns are stored with their article (`el libro`) and list their bare and plural shapes in `forms`. Every conjugated verb or inflected adjective in a story must appear in that word's `forms`. Mark nouns that take either article (`el/la estudiante`) with `anyGender: true`.
+- **Grammar lessons** go in the pack's `lessons`, one per grammar point, each linked to the story that shows it best (the lesson opens once the learner has started half of that story's words). Drill sentences should come from stories or reuse their words, every token must resolve, and the wrong choices must be clearly wrong given the English line (no second correct answer).
+- **Conjugation cards** are made automatically from verb `forms` (and Japanese い-adjectives, see `conjugates` in the pack), so every form needs an accurate English gloss like `'ate (polite)'` or `'I travelled'`. A few join the learner's reviews each day once they know the verb.
+- **Kanji (Japanese)**: every kanji used in a word needs an entry in `js/langs/ja/kanji.js` (meaning, on and kun readings). The validator lists any that are missing. Never remove one: saved cards are `h:<kanji>`.
 - **Vocab order is teaching order.** A word only unlocks once its letters (kana) are learned, so the order mostly matters among words that are already unlocked. Put high-frequency words first.
 - Before committing: `node tools/validate.mjs <lang>` must pass. Then run it again with `--update-lock` to record the new ids. With a learner backup: `node tools/validate.mjs ja --progress path/to/backup.json`.
 
@@ -56,7 +59,28 @@ const stories = [
 // Conjugations of words from earlier packs that this pack's stories use.
 const moreForms = { iku: { 'いきません': 'don\'t go (polite)' } };
 
-export default { id: '02-travel', title: 'Travel', vocab, moreForms, grammar, stories };
+// Grammar lessons. Each drill becomes a fill-in-the-blank card (g:<drillId>) in daily reviews
+// once the learner finishes the lesson. Lesson and drill ids are unique within the language.
+const lessons = [
+  {
+    id: 'kara-made',
+    title: 'から and まで',          // ruby markup allowed
+    summary: 'From and until.',      // one line, shown in the list
+    story: 't1',                     // the story it goes with
+    body: [
+      'A paragraph. **bold** marks target-language words.',
+      { ex: '駅[えき] から 学校[がっこう] まで', en: 'From the station to school.' },  // tappable tokens
+      { table: [['Polite', 'Plain'], ['あります', 'ある']], head: true },            // cells take ruby
+      { tip: 'A short side note.' },
+    ],
+    drills: [
+      { id: 'km-kara', q: '駅[えき] ___ あるきます 。', en: 'I walk from the station.', answer: 'から',
+        choices: ['から', 'まで', 'に'], note: 'Shown after answering.' },  // exactly one ___
+    ],
+  },
+];
+
+export default { id: '02-travel', title: 'Travel', vocab, moreForms, grammar, stories, lessons };
 ```
 
 ### Token markup (story lines and titles)

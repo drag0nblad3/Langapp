@@ -2,8 +2,11 @@
 // the core app (js/core/) only talks to the object exported here.
 import { toHiragana, toRomaji, normalizeKana, hiraToKata, isKatakana } from './romaji.js';
 import { KANA_GROUPS, CONFUSE, kanaUnits } from './kana.js';
+import { KANJI } from './kanji.js';
 import foundations from './content/01-foundations.js';
 import dailyLife from './content/02-daily-life.js';
+import routines from './content/03-routines.js';
+import people from './content/04-people.js';
 
 export default {
   code: 'ja',
@@ -25,6 +28,12 @@ export default {
     confuse: CONFUSE,
     units: kanaUnits, // reading → list of letter units it needs
   },
+
+  // Characters taught after you meet them in words (optional). See kanji.js.
+  glyphs: { name: 'kanji', items: KANJI, onName: 'on', kunName: 'kun' },
+
+  // Parts of speech that get conjugation cards (default: verbs).
+  conjugates: ['verb', 'i-adj'],
 
   // Romanisation shown under words (optional).
   romanize: toRomaji,
@@ -52,7 +61,7 @@ export default {
   },
 
   // Content packs, in teaching order. Add new packs to the end of this list.
-  content: [foundations, dailyLife],
+  content: [foundations, dailyLife, routines, people],
 
   ui: {
     welcome: 'ようこそ',

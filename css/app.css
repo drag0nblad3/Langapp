@@ -279,3 +279,65 @@ b.good, b.ok, b.hard { padding: 1px 6px; border-radius: 6px; }
 .session-card .btn.wide + .btn.wide, .more-row .btn + .btn { margin-top: 10px; }
 .more-row { width: 100%; margin: 8px 0 14px; }
 .btn.grade small:empty, .btn small:empty { display: none; }
+
+/* ---- grammar lessons and drills */
+.lesson { font-size: 1rem; line-height: 1.6; }
+.lesson p { margin: 0 0 12px; }
+.lesson .example { margin: 0 0 12px; }
+.lesson .note { margin: 0 0 12px; }
+.gtable { border-collapse: collapse; margin: 0 0 14px; width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.gtable th, .gtable td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; }
+.gtable th { font-size: .8rem; color: var(--muted); font-weight: 600; }
+.gtable tr:last-child td { border-bottom: 0; }
+.gtable td { font-size: 1.05rem; }
+.lesson-link { display: flex; align-items: center; gap: 10px; }
+.lesson-item.later { opacity: .62; }
+.lesson-rec .go { color: var(--accent); }
+.drill .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-top: 18px; }
+.drill .choice { min-height: 54px; font-size: 1.15rem; }
+.tok.blank { color: var(--accent); font-weight: 700; letter-spacing: .05em; }
+.sentence-sm { font-size: 1.2rem; }
+.lesson-ref { display: block; margin-top: 10px; }
+
+/* backup reminder */
+.backup-card { border-color: var(--learning); background: var(--ok-soft); }
+.backup-card p { margin: 0 0 10px; }
+.backup-card .muted { margin: 10px 0 0; }
+
+/* quiet mode: no sound controls */
+.session-top .quiet-btn { width: 36px; height: 36px; color: var(--muted); }
+.quiet .session-top .quiet-btn { color: var(--accent); }
+.quiet .btn[data-action="say"], .quiet .icon-btn[data-action="say"], .quiet [data-action="sayline"],
+.quiet [data-action="playall"], .quiet [data-action="rec"], .quiet [data-action="playrec"], .quiet [data-action="check"] { display: none !important; }
+
+/* listening card */
+.listen-big { width: 112px; height: 112px; border-radius: 50%; border: none; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; margin: 12px auto 16px; cursor: pointer; }
+.listen-big:active { transform: scale(.96); }
+
+/* conjugation card */
+.conj-from { font-size: 1.4rem; margin: 0 0 4px; }
+
+/* kanji */
+.glyph-big { font-size: 6rem; line-height: 1.1; text-align: center; margin: 8px 0 12px; }
+.glyph-readings { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin: 4px 0 12px; }
+.glyph-readings small { font: 600 .7rem var(--ui); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-right: 4px; }
+.glyph-words { list-style: none; padding: 0; margin: 0 auto; max-width: 320px; text-align: left; }
+.glyph-words li { padding: 6px 0; border-top: 1px solid var(--line); }
+.kchip.glyph { font-size: 1.3rem; }
+
+/* listening mode */
+.listen { padding-bottom: 32px; }
+.listen-now { min-height: 140px; text-align: center; }
+.listen-now .sentence { margin: 8px 0; }
+.hidden-line { width: 100%; min-height: 72px; margin: 8px 0; border: 2px dashed var(--line); border-radius: 12px; background: var(--surface-2); color: var(--muted); font: inherit; cursor: pointer; }
+.listen-controls { display: flex; align-items: center; justify-content: center; gap: 24px; margin: 16px 0; }
+.play-big { width: 76px; height: 76px; border-radius: 50%; border: none; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; cursor: pointer; box-shadow: var(--shadow); }
+.play-big:disabled { opacity: .4; cursor: default; }
+.listen-opts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 16px; }
+.chip { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 7px 14px; font: 500 .85rem var(--ui); cursor: pointer; }
+.chip.on { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.listen-list { list-style: none; padding: 0; margin: 0 0 12px; }
+.listen-list li button { width: 100%; text-align: left; background: none; border: none; border-bottom: 1px solid var(--line); padding: 10px 4px; font: inherit; color: var(--ink); cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
+.listen-list li.on button { color: var(--accent); font-weight: 600; }
+.center { text-align: center; justify-content: center; }
+.field small.muted { display: block; font-weight: 400; font-size: .78rem; }

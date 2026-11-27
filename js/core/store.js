@@ -1,6 +1,6 @@
 // Saved progress (on this device) and the daily study queue.
 import { newCard, review, recall, dayKey, Rating, MIN } from './srs.js';
-import { LETTERS, WORDS, WORD_BY_ID, STORY_LIST, wordUnits } from './content.js';
+import { LETTERS, WORDS, WORD_BY_ID, STORY_LIST, STORY_BY_ID, LESSON_LIST, LESSON_BY_ID, GLYPHS, GLYPH_BY_CHAR, wordUnits, drillForms } from './content.js';
 
 // Progress is saved per language: hibi-ja, hibi-es, …
 let KEY = null;
@@ -13,10 +13,12 @@ const DEFAULT_SETTINGS = {
   spacing: true,
   rate: 0.9,
   voice: null,
+  quiet: false,        // no sound: listening cards become reading cards
+  hideKnownRuby: false, // hide furigana over characters you have learned
 };
 
 function blank() {
-  return { v: 1, cards: {}, settings: { ...DEFAULT_SETTINGS }, days: {}, lastNewKind: 'word', stories: {}, created: Date.now() };
+  return { v: 1, cards: {}, settings: { ...DEFAULT_SETTINGS }, days: {}, lastNewKind: 'word', stories: {}, lessons: {}, created: Date.now() };
 }
 
 export let state = blank();
@@ -67,12 +69,19 @@ export function addTime(ms) {
 // ---- card helpers -------------------------------------------------------
 
 export function cardKind(id) {
-  return { k: 'letter', r: 'recognize', p: 'produce', s: 'sentence' }[id[0]];
+  return { k: 'letter', r: 'recognize', p: 'produce', s: 'sentence', g: 'grammar', l: 'listen', c: 'conjugate', h: 'glyph' }[id[0]];
 }
 export const letterCardId = (kana) => `k:${kana}`;
 export const recogId = (wordId) => `r:${wordId}`;
 export const prodId = (wordId) => `p:${wordId}`;
 export const sentenceId = (storyId, line) => `s:${storyId}:${line}`;
+export const drillCardId = (drillId) => `g:${drillId}`;
+export const listenId = (storyId, line) => `l:${storyId}:${line}`;
+export const conjId = (wordId, form) => `c:${wordId}:${form}`;
+export const glyphId = (char) => `h:${char}`;
+
+/** A character counts as learned once its card has graduated to review. */
+export function glyphLearned(char) { return state.cards[glyphId(char)]?.state === 'review'; }
 
 export function isKnownLetter(kana) { return !!state.cards[letterCardId(kana)]; }
 export function isLearnedWord(wordId) { return !!state.cards[recogId(wordId)]; }
@@ -132,21 +141,85 @@ export function addExtraNew(n) {
   save();
 }
 
-/** Choose the next thing to teach, alternating kana and words when both are available. */
+/** Characters (kanji) open up once you have started a word that uses them. */
+const GLYPHS_PER_DAY = 3;
+function nextGlyph() {
+  if ((today().glyphs || 0) >= GLYPHS_PER_DAY) return null;
+  return GLYPHS.find((g) => !state.cards[glyphId(g.char)] && g.words.some(isLearnedWord)) || null;
+}
+
+/** Choose the next thing to teach, alternating kana and words when both are available,
+ *  with a character (kanji) after a word now and then. */
 export function pickNew() {
   const k = nextLetter();
   const w = nextWord();
+  const g = state.lastNewKind === 'word' ? nextGlyph() : null;
+  if (g) return { kind: 'glyph', item: g };
   if (k && w) return state.lastNewKind === 'letter' ? { kind: 'word', item: w } : { kind: 'letter', item: k };
   if (w) return { kind: 'word', item: w };
   if (k) return { kind: 'letter', item: k };
-  return null;
+  const g2 = nextGlyph();
+  return g2 ? { kind: 'glyph', item: g2 } : null;
 }
 
 export function teach(pick) {
   state.lastNewKind = pick.kind;
-  const id = pick.kind === 'letter' ? letterCardId(pick.item.unit) : recogId(pick.item.id);
+  if (pick.kind === 'glyph') today().glyphs = (today().glyphs || 0) + 1;
+  const id = pick.kind === 'letter' ? letterCardId(pick.item.unit)
+    : pick.kind === 'glyph' ? glyphId(pick.item.char) : recogId(pick.item.id);
   return introduce(id);
 }
+
+// ---- cards that grow out of what you know ----------------------------------
+// Each day a few listening cards (for sentences you have learned to read) and
+// conjugation cards (for verbs you know) join your reviews, so they never flood in.
+
+const LISTEN_PER_DAY = 3;
+const CONJ_PER_DAY = 4;
+
+export function addDailyExtras() {
+  const d = today();
+  let changed = false;
+  for (const c of Object.values(state.cards)) {
+    if ((d.listenAdded || 0) >= LISTEN_PER_DAY) break;
+    if (!c.id.startsWith('s:') || c.state !== 'review') continue;
+    const [, sid, li] = c.id.split(':');
+    const lid = listenId(sid, li);
+    if (state.cards[lid] || !STORY_BY_ID[sid]?.parsed[+li]) continue;
+    introduce(lid, { countNew: false });
+    d.listenAdded = (d.listenAdded || 0) + 1;
+    changed = true;
+  }
+  for (const w of WORDS) {
+    if ((d.conjAdded || 0) >= CONJ_PER_DAY) break;
+    if (state.cards[recogId(w.id)]?.state !== 'review') continue;
+    for (const f of drillForms(w)) {
+      const cid = conjId(w.id, f.plain);
+      if (state.cards[cid]) continue;
+      introduce(cid, { countNew: false });
+      d.conjAdded = (d.conjAdded || 0) + 1;
+      changed = true;
+      break; // one form per word per day, so a verb's forms are spread out
+    }
+  }
+  if (changed) save();
+}
+
+// ---- backups ----------------------------------------------------------------
+
+const WEEK = 7 * 24 * 60 * MIN;
+
+/** Remind about backups once there is progress worth losing and a week has passed. */
+export function backupDue(now = Date.now()) {
+  if (Object.keys(state.cards).length < 30) return false;
+  const b = state.backup || {};
+  // Very old saves may lack `created`; the first study day is a good stand-in.
+  const firstDay = Date.parse(Object.keys(state.days).sort()[0]) || now;
+  const start = Math.min(state.created || now, firstDay);
+  return now - Math.max(b.last || 0, b.snoozed || 0, start) > WEEK;
+}
+export function noteBackup() { (state.backup ||= {}).last = Date.now(); save(); }
+export function snoozeBackup() { (state.backup ||= {}).snoozed = Date.now(); save(); }
 
 // ---- queue ----------------------------------------------------------------
 
@@ -274,4 +347,44 @@ export function strength(card) {
   if (!card) return 'none';
   if (card.state !== 'review') return 'learning';
   return card.s >= 21 ? 'strong' : 'review';
+}
+
+// ---- grammar lessons -------------------------------------------------------
+// A lesson is "ready" once you have started half the words in the story it prepares
+// you for, so you meet the grammar a little before the story becomes easy to read.
+
+export function lessonProgress(lesson) {
+  const story = STORY_BY_ID[lesson.story];
+  if (!story) return 1;
+  let total = 0; let started = 0;
+  for (const l of story.parsed) {
+    for (const t of l.tokens) {
+      if (t.kind !== 'word') continue;
+      total++;
+      if (isLearnedWord(t.id)) started++;
+    }
+  }
+  return total ? started / total : 1;
+}
+
+export const LESSON_READY = 0.5;
+export const lessonReady = (lesson) => lessonProgress(lesson) >= LESSON_READY;
+export const lessonDone = (id) => !!state.lessons?.[id];
+
+/** The first lesson you are ready for but haven't done yet. */
+export function nextLesson() {
+  return LESSON_LIST.find((l) => !lessonDone(l.id) && lessonReady(l)) || null;
+}
+
+/** Finish a lesson: its drills join your reviews as practice cards. */
+export function completeLesson(id) {
+  const lesson = LESSON_BY_ID[id];
+  if (!lesson) return 0;
+  (state.lessons ||= {})[id] = { done: Date.now() };
+  let added = 0;
+  for (const d of lesson.drills) {
+    if (!state.cards[drillCardId(d.id)]) { introduce(drillCardId(d.id), { countNew: false }); added++; }
+  }
+  save();
+  return added;
 }
