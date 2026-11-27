@@ -89,9 +89,17 @@ export function initContent(pack) {
   const grammar = pack.content.flatMap((c) => c.grammar || []);
   const stories = pack.content.flatMap((c) => (c.stories || []).map((s) => ({ ...s, pack: c.id })));
 
+  // A later pack can add conjugations of an earlier word without editing the old pack:
+  // moreForms: { wordId: { form: gloss } }.
+  const moreForms = {};
+  for (const c of pack.content) {
+    for (const [id, f] of Object.entries(c.moreForms || {})) moreForms[id] = { ...moreForms[id], ...f };
+  }
+
   WORDS = vocab.map((v) => {
     const r = parseRuby(v.text);
-    return { ...v, plain: r.plain, reading: r.reading, segments: r.segments, hasRuby: r.plain !== r.reading };
+    const forms = moreForms[v.id] ? { ...v.forms, ...moreForms[v.id] } : v.forms;
+    return { ...v, forms, plain: r.plain, reading: r.reading, segments: r.segments, hasRuby: r.plain !== r.reading };
   });
   WORD_BY_ID = Object.fromEntries(WORDS.map((w) => [w.id, w]));
   GRAMMAR_BY_ID = Object.fromEntries(grammar.map((g) => [g.id, g]));

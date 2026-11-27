@@ -3,6 +3,7 @@
 import { toHiragana, toRomaji, normalizeKana, hiraToKata, isKatakana } from './romaji.js';
 import { KANA_GROUPS, CONFUSE, kanaUnits } from './kana.js';
 import foundations from './content/01-foundations.js';
+import dailyLife from './content/02-daily-life.js';
 
 export default {
   code: 'ja',
@@ -51,7 +52,7 @@ export default {
   },
 
   // Content packs, in teaching order. Add new packs to the end of this list.
-  content: [foundations],
+  content: [foundations, dailyLife],
 
   ui: {
     welcome: 'ようこそ',
