@@ -1,9 +1,10 @@
 import * as S from './store.js';
 import { Rating, describeInterval as describeIntervalFor } from './srs.js';
-import { speak, listen, record, similarity, languageVoices, setVoice, setSpeechLang, recognitionAvailable, ttsAvailable } from './speech.js';
+import { speak as speakRaw, listen, record, similarity, languageVoices, setVoice, setSpeechLang, recognitionAvailable, ttsAvailable } from './speech.js';
 import {
   initContent, PACK, LETTER_GROUPS, LETTER_BY_UNIT, CONFUSE, WORDS, WORD_BY_ID, GRAMMAR_BY_ID,
-  STORY_LIST, STORY_BY_ID, LESSON_LIST, LESSON_BY_ID, DRILL_BY_ID, exampleFor, wordUnits, romanize, parseRuby,
+  STORY_LIST, STORY_BY_ID, LESSON_LIST, LESSON_BY_ID, DRILL_BY_ID, GLYPHS, GLYPH_BY_CHAR, exampleFor, formExample, drillForms,
+  wordUnits, romanize, parseRuby,
 } from './content.js';
 import { LANGUAGES, DEFAULT_LANGUAGE } from '../langs/index.js';
 
@@ -12,6 +13,10 @@ const app = $('#app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const cfg = () => S.state.settings;
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+/** Quiet mode: no sound at all, for when audio can't be used. */
+const quiet = () => cfg().quiet || !ttsAvailable();
+function speak(text, opts) { return cfg().quiet ? Promise.resolve() : speakRaw(text, opts); }
+function applyQuiet() { document.body.classList.toggle('quiet', !!cfg().quiet); }
 const romanHTML = (reading) => { const r = romanize(reading); return r ? `<p class="roman">${esc(r)}</p>` : ''; };
 
 // ---------------------------------------------------------------- icons
@@ -34,14 +39,24 @@ const ICON = {
   gear: '<path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z M19.4 13a7.5 7.5 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.5 7.5 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1l.3 2.5h4l.4-2.5a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
   flame: '<path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2.2 1.2-3.6 2.3-4.6.2 1.6 1 2.6 2 2.9C10.8 8.6 11 5.5 12 3z" fill="currentColor"/>',
   eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2.8" fill="currentColor"/>',
+  mute: '<path d="M4 9h4l5-4v14l-5-4H4zM16 9l5 6M21 9l-5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+  sound: '<path d="M4 9h4l5-4v14l-5-4H4zM16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+  prev: '<path d="M6 5v14M19 5.5v13L9 12z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
+  next: '<path d="M18 5v14M5 5.5v13L15 12z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
+  pause: '<path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/>',
   ear: '<path d="M7 9a5 5 0 0 1 10 0c0 3-3 4-3 7a3 3 0 0 1-6 0M10 9.5a2 2 0 0 1 4 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
 };
 const icon = (name, size = 20) => `<svg viewBox="0 0 24 24" width="${size}" height="${size}" aria-hidden="true">${ICON[name]}</svg>`;
 
 // ---------------------------------------------------------------- shared rendering
 
-function rubyHTML(segments, furigana = cfg().furigana) {
-  return segments.map((s) => (s.r && furigana ? `<ruby>${esc(s.t)}<rt>${esc(s.r)}</rt></ruby>` : esc(s.t))).join('');
+/** Ruby markup → HTML. With no explicit choice, follows the settings, which can hide the
+ *  reading over characters the learner has already learned. */
+function rubyHTML(segments, furigana = null) {
+  const auto = furigana === null;
+  const on = auto ? cfg().furigana : furigana;
+  const knownRuby = (t) => auto && cfg().hideKnownRuby && [...t].every((ch) => GLYPH_BY_CHAR[ch] && S.glyphLearned(ch));
+  return segments.map((s) => (s.r && on && !knownRuby(s.t) ? `<ruby>${esc(s.t)}<rt>${esc(s.r)}</rt></ruby>` : esc(s.t))).join('');
 }
 
 function tokenClass(t) {
@@ -100,6 +115,7 @@ const routes = [
   [/^#\/settings$/, viewSettings, 'settings'],
   [/^#\/session$/, viewSession, null],
   [/^#\/practice$/, viewPractice, null],
+  [/^#\/listen\/(\w+)$/, viewListen, null],
 ];
 
 let cleanup = null;
@@ -130,6 +146,7 @@ let installPrompt = null;
 window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installPrompt = e; if (!location.hash || location.hash === '#/today') route(); });
 
 function viewToday() {
+  S.addDailyExtras();
   const d = S.today();
   const due = S.dueCounts();
   const pending = due.learn + due.review;
@@ -159,6 +176,12 @@ function viewToday() {
     ${fresh ? `<section class="card intro">
       <p>Welcome to <b>Hibi</b> (日々, "day by day"). ${PACK.ui.intro}</p>
       <p class="muted">About 15 minutes a day. Turn your sound on.</p>
+    </section>` : ''}
+
+    ${S.backupDue() ? `<section class="card backup-card">
+      <p><b>Back up your progress.</b> It is saved on this phone only, so clearing the browser's data or losing the phone would erase it. ${S.state.backup?.last ? `Last backup: ${Math.round((Date.now() - S.state.backup.last) / 864e5)} days ago.` : 'You haven\'t made one yet.'}</p>
+      <div class="row-btns"><button class="btn primary" data-action="export">Export backup</button><button class="btn ghost" data-action="snoozebackup">Later</button></div>
+      <p class="muted small">Keep the file somewhere safe, like Google Drive. Restore it in Settings.</p>
     </section>` : ''}
 
     <section class="card session-card">
@@ -214,6 +237,7 @@ function coverageBadge(c) {
 let session = null;
 
 function viewSession() {
+  S.addDailyExtras();
   session = { lastId: null, sinceNew: 0, done: 0, startedAt: Date.now() };
   nextInSession();
   const onKey = (e) => {
@@ -242,6 +266,7 @@ function sessionFrame(inner, { label = '' } = {}) {
         <a class="icon-btn" href="#/today" aria-label="${session.practice ? 'End practice' : 'End session'}">${icon('x')}</a>
         <div class="bar"><i style="width:${pct}%"></i></div>
         <span class="left">${left}</span>
+        <button class="icon-btn quiet-btn" data-action="quiet" aria-label="${cfg().quiet ? 'Turn sound on' : 'Quiet mode'}" title="${cfg().quiet ? 'Quiet mode is on' : 'Quiet mode'}">${icon(cfg().quiet ? 'mute' : 'sound', 18)}</button>
       </div>
       ${label ? `<p class="kind">${session.practice ? 'Practice · ' : ''}${label}</p>` : ''}
       <div class="stage">${inner}</div>
@@ -268,6 +293,9 @@ function showCard(c) {
   if (kind === 'produce') return showProduce(c);
   if (kind === 'sentence') return showSentence(c);
   if (kind === 'grammar') return showDrill(c);
+  if (kind === 'listen') return showListenCard(c);
+  if (kind === 'conjugate') return showConj(c);
+  if (kind === 'glyph') return showGlyph(c);
   // unknown card: drop it
   delete S.state.cards[c.id];
   S.save();
@@ -385,6 +413,19 @@ function showTeach(pick) {
     if (cfg().autoplay) speak(k.unit, { rate: cfg().rate });
     return;
   }
+  if (pick.kind === 'glyph') {
+    const g = pick.item;
+    sessionFrame(`
+      <div class="teach">
+        <p class="badge">New ${esc(PACK.glyphs.name)}</p>
+        ${glyphFaceHTML(g)}
+        ${glyphInfoHTML(g)}
+        <p class="muted small">You already know words with it. Look at its shape, then say its meaning to yourself.</p>
+      </div>
+      <div class="actions"><button class="btn primary big" data-default data-action="taught" data-kind="glyph" data-id="${esc(g.char)}">Got it</button></div>
+    `, { label: `${cap(PACK.glyphs.name)} · new` });
+    return;
+  }
   const w = pick.item;
   const ex = exampleFor(w.id);
   sessionFrame(`
@@ -494,7 +535,10 @@ function reveal(id) {
         ${ex ? exampleHTML(ex) : ''}
       </div>
       ${gradeButtons(id)}`;
-  } else if (kind === 'sentence') {
+  } else if (kind === 'glyph') {
+    const g = GLYPH_BY_CHAR[id.slice(2)];
+    stage.innerHTML = `<div class="flash">${glyphFaceHTML(g)}${glyphInfoHTML(g)}</div>${gradeButtons(id)}`;
+  } else if (kind === 'sentence' || kind === 'listen') {
     const [, sid, li] = id.split(':');
     const line = STORY_BY_ID[sid].parsed[+li];
     stage.innerHTML = `
@@ -566,6 +610,206 @@ function showSentence(c) {
 function focusAnswer() {
   setTimeout(() => $('.answer')?.focus(), 60);
 }
+
+// --- listening card (hear a sentence you can already read → understand it by ear)
+
+function showListenCard(c) {
+  const [, sid, li] = c.id.split(':');
+  const line = STORY_BY_ID[sid]?.parsed[+li];
+  if (!line) { delete S.state.cards[c.id]; S.save(); return nextInSession(); }
+  if (quiet()) {
+    // No sound available: the same sentence as a reading card, so the review still counts.
+    sessionFrame(`
+      <div class="flash">
+        <p class="sentence tl">${lineHTML(line.tokens)}</p>
+        <p class="muted small">Quiet mode: read it, and say it in your head. Do you understand it?</p>
+      </div>
+      <div class="actions"><button class="btn primary big" data-default data-action="reveal" data-id="${esc(c.id)}">Show meaning</button></div>
+    `, { label: 'Listening · reading version' });
+    return;
+  }
+  sessionFrame(`
+    <div class="flash">
+      <button class="listen-big" data-action="say" data-text="${esc(line.text)}" aria-label="Play">${icon('ear', 44)}</button>
+      <button class="btn ghost" data-action="sayline" data-s="${esc(sid)}" data-l="${+li}" data-slow="1">${icon('slow', 16)} Slower</button>
+      <p class="muted small">Listen without reading. What does it mean?</p>
+    </div>
+    <div class="actions"><button class="btn primary big" data-default data-action="reveal" data-id="${esc(c.id)}">Show sentence</button></div>
+  `, { label: 'Listening' });
+  speak(line.text, { rate: cfg().rate });
+}
+
+// --- conjugation card (dictionary form + meaning → type the form)
+
+function conjParts(id) {
+  const [, wid, ...rest] = id.split(':');
+  const w = WORD_BY_ID[wid];
+  const form = rest.join(':');
+  const f = w && drillForms(w).find((x) => x.plain === form);
+  return { w, f };
+}
+
+function showConj(c) {
+  const { w, f } = conjParts(c.id);
+  if (!f) { delete S.state.cards[c.id]; S.save(); return nextInSession(); }
+  sessionFrame(`
+    <form class="quiz" data-action="checkConj" data-id="${esc(c.id)}">
+      <p class="conj-from">${wordHTML(w)} <span class="muted small">${esc(w.en)}</span></p>
+      <p class="prompt">→ ${esc(f.gloss)}</p>
+      <p class="muted small">Type this form of the word.</p>
+      <input class="answer" name="a" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="${esc(PACK.input.placeholder)}" data-word="${w.id}" data-live="1" aria-label="Answer">
+      <p class="preview tl" aria-live="polite">&nbsp;</p>
+      <div class="actions"><button class="btn primary big" type="submit">Check</button></div>
+    </form>
+  `, { label: 'Conjugation' });
+  focusAnswer();
+}
+
+function checkConj(form) {
+  const id = form.dataset.id;
+  const { w, f } = conjParts(id);
+  const raw = form.a.value.trim();
+  if (!raw) return;
+  const given = PACK.input.convert(raw, true, w);
+  const norm = PACK.input.normalize;
+  // Any form with the same meaning counts (e.g. two spellings of one form).
+  const ok = drillForms(w).filter((x) => x.gloss === f.gloss)
+    .some((x) => norm(given) === norm(x.reading) || norm(raw) === norm(x.plain));
+  speak(f.plain, { rate: cfg().rate });
+  const ex = formExample(w.id, f.plain);
+  resultScreen({
+    id, ok, given,
+    right: `<span class="tl">${rubyHTML(f.segments)}</span> <span class="muted">${esc(romanize(f.reading))}</span>`,
+    extra: `<p class="muted small">${esc(w.plain)} → ${esc(f.gloss)}</p>${(() => { const n = PACK.input.note?.(raw, { ...w, plain: f.plain, reading: f.reading, anyGender: false }, ok); return n ? `<p class="note">${esc(n)}</p>` : ''; })()}${ex ? exampleHTML(ex) : ''}`,
+  });
+}
+
+// --- characters (kanji): see it → recall its meaning
+
+function glyphFaceHTML(g) {
+  return `<div class="glyph-big tl">${esc(g.char)}</div>`;
+}
+
+function glyphInfoHTML(g) {
+  const words = g.words.map((id) => WORD_BY_ID[id]).slice(0, 4);
+  return `<p class="meaning">${esc(g.en)}</p>
+    <p class="glyph-readings">${g.on ? `<span><small>${esc(PACK.glyphs.onName || 'reading')}</small> <span class="tl">${esc(g.on)}</span></span>` : ''}${g.kun ? `<span><small>${esc(PACK.glyphs.kunName || 'native reading')}</small> <span class="tl">${esc(g.kun)}</span></span>` : ''}</p>
+    ${words.length ? `<ul class="glyph-words">${words.map((w) => `<li><span class="tl">${rubyHTML(w.segments, true)}</span> <span class="muted small">${esc(w.en)}</span></li>`).join('')}</ul>` : ''}`;
+}
+
+function showGlyph(c) {
+  const g = GLYPH_BY_CHAR[c.id.slice(2)];
+  if (!g) { delete S.state.cards[c.id]; S.save(); return nextInSession(); }
+  sessionFrame(`
+    <div class="flash">
+      ${glyphFaceHTML(g)}
+      <p class="muted small">What does it mean? Can you think of a word that uses it?</p>
+    </div>
+    <div class="actions"><button class="btn primary big" data-default data-action="reveal" data-id="${esc(c.id)}">Show answer</button></div>
+  `, { label: cap(PACK.glyphs.name) });
+}
+
+// ---------------------------------------------------------------- Listening mode
+
+const listenState = { sid: null, i: 0, playing: false, token: 0, showText: false, showEN: false, repeat: false, slow: false };
+let wakeLock = null;
+
+function viewListen(id) {
+  const s = STORY_BY_ID[id];
+  if (!s) { location.hash = '#/read'; return null; }
+  if (listenState.sid !== id) Object.assign(listenState, { sid: id, i: 0, playing: false });
+  renderListen();
+  return () => { listenPause(); };
+}
+
+function renderListen() {
+  const s = STORY_BY_ID[listenState.sid];
+  if (!s) return;
+  const st = listenState;
+  const n = s.parsed.length;
+  const done = st.i >= n;
+  const line = s.parsed[Math.min(st.i, n - 1)];
+  const blocked = quiet();
+  app.innerHTML = `
+    <div class="listen">
+      <header class="top reader-top">
+        <a class="icon-btn" href="#/read/${s.id}" aria-label="Back">${icon('back')}</a>
+        <div class="grow"><p class="eyebrow">Listening mode</p><h1 class="tl">${lineHTML(s.titleTokens)}</h1></div>
+      </header>
+      ${blocked ? `<section class="card">
+        <p>${cfg().quiet ? 'Quiet mode is on, so nothing will play.' : 'This browser has no speech output.'}</p>
+        ${cfg().quiet ? `<button class="btn primary" data-action="quiet">${icon('sound', 16)} Turn sound on</button>` : ''}
+      </section>` : ''}
+      <section class="card listen-now">
+        ${done ? `<p class="center"><b>End of the story.</b></p>
+          <div class="row-btns center"><button class="btn primary" data-action="lmagain">${icon('refresh', 16)} Play again</button><a class="btn" href="#/read/${s.id}">Read it</a></div>`
+        : `<p class="muted small">Line ${st.i + 1} of ${n}${line.who ? ` · <span class="tl">${esc(line.who)}</span>` : ''}</p>
+          ${st.showText ? `<p class="sentence tl">${lineHTML(line.tokens)}</p>` : `<button class="hidden-line" data-action="lmtext">Tap to show the text</button>`}
+          ${st.showEN ? `<p class="muted">${esc(line.en)}</p>` : ''}`}
+      </section>
+      <div class="listen-controls">
+        <button class="icon-btn" data-action="lmprev" aria-label="Previous line">${icon('prev', 22)}</button>
+        <button class="play-big" data-action="lmplay" aria-label="${st.playing ? 'Pause' : 'Play'}" ${blocked ? 'disabled' : ''}>${icon(st.playing ? 'pause' : 'play', 34)}</button>
+        <button class="icon-btn" data-action="lmnext" aria-label="Next line">${icon('next', 22)}</button>
+      </div>
+      <div class="listen-opts">
+        <button class="chip ${st.showText ? 'on' : ''}" data-action="lmtext">Text</button>
+        <button class="chip ${st.showEN ? 'on' : ''}" data-action="lmen">English</button>
+        <button class="chip ${st.repeat ? 'on' : ''}" data-action="lmrepeat">Each line twice</button>
+        <button class="chip ${st.slow ? 'on' : ''}" data-action="lmslow">Slow</button>
+      </div>
+      <ol class="listen-list">
+        ${s.parsed.map((l, i) => `<li class="${i === st.i ? 'on' : ''}"><button data-action="lmline" data-i="${i}">${st.showText ? `<span class="tl">${esc(l.text)}</span>` : `Line ${i + 1}`}${st.showEN ? `<small class="muted">${esc(l.en)}</small>` : ''}</button></li>`).join('')}
+      </ol>
+      <p class="muted small">Try it without the text first. Shadow each line: say it along with the voice, matching the rhythm.</p>
+    </div>`;
+}
+
+async function listenPlay() {
+  const s = STORY_BY_ID[listenState.sid];
+  if (!s || quiet()) return;
+  const my = ++listenState.token;
+  if (listenState.i >= s.parsed.length) listenState.i = 0;
+  listenState.playing = true;
+  try { wakeLock = await navigator.wakeLock?.request('screen'); } catch (e) { /* not allowed */ }
+  renderListen();
+  const rate = () => (listenState.slow ? Math.min(0.65, cfg().rate) : cfg().rate);
+  while (my === listenState.token && listenState.i < s.parsed.length) {
+    const text = s.parsed[listenState.i].text;
+    await speak(text, { rate: rate() });
+    if (my !== listenState.token) return;
+    if (listenState.repeat) {
+      await new Promise((r) => setTimeout(r, 900));
+      if (my !== listenState.token) return;
+      await speak(text, { rate: rate() });
+      if (my !== listenState.token) return;
+    }
+    await new Promise((r) => setTimeout(r, 900));
+    if (my !== listenState.token) return;
+    listenState.i += 1;
+    if (location.hash.startsWith('#/listen/')) renderListen();
+  }
+  if (my === listenState.token) { listenState.playing = false; releaseWake(); if (location.hash.startsWith('#/listen/')) renderListen(); }
+}
+
+function listenPause() {
+  listenState.token++;
+  listenState.playing = false;
+  window.speechSynthesis?.cancel?.();
+  releaseWake();
+  if (location.hash.startsWith('#/listen/')) renderListen();
+}
+
+function listenJump(d) {
+  const s = STORY_BY_ID[listenState.sid];
+  const wasPlaying = listenState.playing;
+  listenState.token++;
+  window.speechSynthesis?.cancel?.();
+  listenState.i = Math.max(0, Math.min(s.parsed.length - 1, Math.min(listenState.i, s.parsed.length - 1) + d));
+  if (wasPlaying) listenPlay(); else renderListen();
+}
+
+function releaseWake() { try { wakeLock?.release(); } catch (e) { /* ignore */ } wakeLock = null; }
 
 // --- grammar drill (fill the gap: pick the right form)
 
@@ -716,6 +960,7 @@ function viewReader(id) {
     </header>
     <div class="reader-tools">
       <button class="btn ghost sm" data-action="playall" data-id="${s.id}">${icon('ear', 16)} Listen to all</button>
+      <a class="btn ghost sm" href="#/listen/${s.id}">${icon('sound', 16)} Listening mode</a>
       ${PACK.rubyBase ? `<button class="btn ghost sm" data-action="toggle" data-key="furigana">${cfg().furigana ? 'Hide' : 'Show'} ${esc(PACK.rubyName)}</button>` : ''}
       <button class="btn ghost sm" data-action="toggleEN">${icon('eye', 16)} English</button>
     </div>
@@ -747,7 +992,7 @@ function viewReader(id) {
       <p class="muted small">Shadowing tip: play a line, then say it along with the audio, matching the rhythm. Record yourself and compare.</p>
       <button class="btn primary big" data-action="finish" data-id="${s.id}">${S.state.stories[s.id] ? 'Read again ✓' : 'Finished reading'}</button>
     </div>`;
-  return () => { playAllToken++; speechSynthesis?.cancel?.(); };
+  return () => { playAllToken++; window.speechSynthesis?.cancel?.(); };
 }
 
 function showTokenSheet(t) {
@@ -878,6 +1123,7 @@ function viewProgress() {
     <header class="top"><div><p class="eyebrow">Your progress</p><h1>Progress</h1></div></header>
     <div class="legend"><span><i class="dot learning"></i>learning</span><span><i class="dot review"></i>learned</span><span><i class="dot strong"></i>strong (3+ weeks)</span></div>
     ${scripts.map((sc, i) => `<details class="card" ${i === 0 ? 'open' : ''}><summary>${esc(cap(sc || PACK.letters.name))}</summary><div class="kgrid">${script(sc)}</div></details>`).join('')}
+    ${GLYPHS.length ? `<details class="card"><summary>${esc(cap(PACK.glyphs.name))} <span class="muted small">${GLYPHS.filter((g) => S.state.cards[S.glyphId(g.char)]).length}/${GLYPHS.length}</span></summary><div class="kgrid">${GLYPHS.map((g) => `<span class="kchip glyph ${S.strength(S.state.cards[S.glyphId(g.char)])}">${esc(g.char)}<small>${esc(g.en.split(/[;,]/)[0])}</small></span>`).join('')}</div></details>` : ''}
     <details class="card" open><summary>Words</summary><ul class="words">${words}</ul></details>`;
 }
 
@@ -899,8 +1145,10 @@ function viewSettings() {
         <input type="number" min="0" max="50" value="${s.newPerDay}" data-setting="newPerDay"></label>
       <label class="field"><span>Daily goal (minutes)</span>
         <input type="number" min="5" max="120" step="5" value="${s.goalMinutes}" data-setting="goalMinutes"></label>
+      <label class="field switch"><span>Quiet mode <small class="muted">No sound. Listening cards become reading cards.</small></span><input type="checkbox" ${s.quiet ? 'checked' : ''} data-setting="quiet"></label>
       <label class="field switch"><span>Play audio automatically</span><input type="checkbox" ${s.autoplay ? 'checked' : ''} data-setting="autoplay"></label>
       ${PACK.rubyBase ? `<label class="field switch"><span>Show ${esc(PACK.rubyName)}</span><input type="checkbox" ${s.furigana ? 'checked' : ''} data-setting="furigana"></label>` : ''}
+      ${GLYPHS.length ? `<label class="field switch"><span>Hide ${esc(PACK.rubyName)} over ${esc(PACK.glyphs.name)} you know <small class="muted">Once a ${esc(PACK.glyphs.name)} card is learned, its reading disappears.</small></span><input type="checkbox" ${s.hideKnownRuby ? 'checked' : ''} data-setting="hideKnownRuby"></label>` : ''}
       ${PACK.usesSpaces ? '' : `<label class="field switch"><span>Space between words</span><input type="checkbox" ${s.spacing ? 'checked' : ''} data-setting="spacing"></label>`}
     </section>
 
@@ -931,6 +1179,7 @@ function viewSettings() {
       <p><b>Active recall:</b> you type readings and words instead of picking from a list.</p>
       <p><b>Comprehensible input:</b> stories show how much you already know. Read ones at 90% or more, and save sentences you like as cards.</p>
       <p><b>Speaking:</b> shadow lines in the reader, record yourself, and use the mic check.</p>
+      <p><b>No sound?</b> Turn on quiet mode. Keep typing answers, read stories with the English hidden, say lines in your head, and catch up with listening mode later.</p>
     </section>`;
 }
 
@@ -941,11 +1190,13 @@ function onSetting(el) {
   if (key === 'goalMinutes') v = Math.max(5, Math.min(120, v | 0));
   cfg()[key] = v;
   if (key === 'voice') setVoice(v);
+  if (key === 'quiet') applyQuiet();
   S.save();
   if (key === 'rate') el.previousElementSibling.querySelector('b').textContent = `${v.toFixed(2)}×`;
 }
 
 function exportData() {
+  S.noteBackup();
   const blob = new Blob([JSON.stringify(S.state)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -963,6 +1214,7 @@ async function importData(input) {
     if (!confirm('Replace your current progress with this backup?')) return;
     S.replaceState(data);
     setVoice(cfg().voice);
+    applyQuiet();
     toast('Backup restored');
     route();
   } catch (e) {
@@ -976,9 +1228,11 @@ const actions = {
   say: (el) => speak(el.dataset.text, { rate: cfg().rate }),
   sayword: (el) => sayWord(WORD_BY_ID[el.dataset.id]),
   taught: (el) => {
-    if (el.dataset.kind === 'letter') S.teach({ kind: 'letter', item: LETTER_BY_UNIT[el.dataset.id] });
+    const k = el.dataset.kind;
+    if (k === 'letter') S.teach({ kind: 'letter', item: LETTER_BY_UNIT[el.dataset.id] });
+    else if (k === 'glyph') S.teach({ kind: 'glyph', item: GLYPH_BY_CHAR[el.dataset.id] });
     else S.teach({ kind: 'word', item: WORD_BY_ID[el.dataset.id] });
-    session.lastId = el.dataset.kind === 'letter' ? S.letterCardId(el.dataset.id) : S.recogId(el.dataset.id);
+    session.lastId = k === 'letter' ? S.letterCardId(el.dataset.id) : k === 'glyph' ? S.glyphId(el.dataset.id) : S.recogId(el.dataset.id);
     session.done += 1;
     nextInSession();
   },
@@ -1027,7 +1281,25 @@ const actions = {
   toggleEN: () => document.querySelector('.lines')?.classList.toggle('show-en'),
   toggle: (el) => { cfg()[el.dataset.key] = !cfg()[el.dataset.key]; S.save(); refreshReader(); },
   finish: (el) => { S.markRead(el.dataset.id); toast('Nice! Story marked as read.'); location.hash = '#/read'; },
-  export: exportData,
+  export: () => { exportData(); if (!location.hash || location.hash === '#/today') setTimeout(route, 300); },
+  snoozebackup: () => { S.snoozeBackup(); toast('I\'ll remind you next week'); route(); },
+  quiet: () => {
+    cfg().quiet = !cfg().quiet; S.save(); applyQuiet();
+    if (cfg().quiet) window.speechSynthesis?.cancel?.();
+    toast(cfg().quiet ? 'Quiet mode on: no sound' : 'Sound on');
+    const b = $('.quiet-btn');
+    if (b) { b.innerHTML = icon(cfg().quiet ? 'mute' : 'sound', 18); b.title = cfg().quiet ? 'Quiet mode is on' : 'Quiet mode'; }
+    if (location.hash.startsWith('#/listen/')) renderListen();
+  },
+  lmplay: () => (listenState.playing ? listenPause() : listenPlay()),
+  lmprev: () => listenJump(-1),
+  lmnext: () => listenJump(1),
+  lmtext: () => { listenState.showText = !listenState.showText; renderListen(); },
+  lmen: () => { listenState.showEN = !listenState.showEN; renderListen(); },
+  lmrepeat: () => { listenState.repeat = !listenState.repeat; renderListen(); },
+  lmslow: () => { listenState.slow = !listenState.slow; renderListen(); },
+  lmagain: () => { listenState.i = 0; listenPlay(); },
+  lmline: (el) => { listenState.i = +el.dataset.i; listenPlay(); },
   reset: () => {
     if (confirm('Delete all progress on this device? This cannot be undone.')) { S.resetAll(); toast('Progress reset'); location.hash = '#/today'; route(); }
   },
@@ -1055,6 +1327,7 @@ document.addEventListener('submit', (e) => {
   e.preventDefault();
   if (f.dataset.action === 'checkLetter') checkLetter(f);
   if (f.dataset.action === 'checkProduce') checkProduce(f);
+  if (f.dataset.action === 'checkConj') checkConj(f);
 });
 document.addEventListener('input', (e) => {
   if (e.target.dataset.live) livePreview(e.target);
@@ -1083,6 +1356,7 @@ async function boot() {
   S.initStore(pack.code);
   setSpeechLang(pack.speechLang);
   setVoice(cfg().voice);
+  applyQuiet();
   document.documentElement.style.setProperty('--tl', pack.font);
   route();
 }

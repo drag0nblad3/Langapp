@@ -130,6 +130,26 @@ for (const l of C.LESSON_LIST) {
   }
 }
 
+// ---- characters (kanji) and conjugation cards
+dupes(C.GLYPHS.map((g) => g.char), 'kanji');
+for (const g of C.GLYPHS) {
+  if (!g.en) err(`Kanji "${g.char}" has no meaning`);
+  if (!g.words.length) warn(`Kanji "${g.char}" isn't used by any word yet, so it never opens up`);
+}
+if (C.GLYPHS.length && pack.rubyBase) {
+  const base = new RegExp(pack.rubyBase);
+  const missing = new Set();
+  for (const w of C.WORDS) for (const ch of w.plain) if (base.test(ch) && !C.GLYPH_BY_CHAR[ch]) missing.add(ch);
+  if (missing.size) warn(`Kanji used in words but without a kanji card: ${[...missing].join(' ')}`);
+}
+for (const w of C.WORDS) {
+  const seen = new Set();
+  for (const f of C.drillForms(w)) {
+    if (seen.has(f.plain)) err(`Word "${w.id}" lists the form "${f.plain}" twice`);
+    seen.add(f.plain);
+  }
+}
+
 // ---- lock file: published ids must stay stable
 const lockPath = join(root, `js/langs/${lang}/ids.lock.json`);
 const current = {
@@ -138,12 +158,14 @@ const current = {
   stories: Object.fromEntries(C.STORY_LIST.map((s) => [s.id, s.parsed.map((l) => l.text)])),
   lessons: C.LESSON_LIST.map((l) => l.id),
   drills: C.LESSON_LIST.flatMap((l) => l.drills.map((d) => d.id)),
+  glyphs: C.GLYPHS.map((g) => g.char),
 };
 if (existsSync(lockPath)) {
   const lock = JSON.parse(readFileSync(lockPath, 'utf8'));
   for (const id of lock.words) if (!current.words.includes(id)) err(`Published word "${id}" was removed or renamed (learners' cards point to it)`);
   for (const u of lock.letters) if (!current.letters.includes(u)) err(`Published letter "${u}" was removed`);
   for (const id of lock.lessons || []) if (!current.lessons.includes(id)) err(`Published lesson "${id}" was removed or renamed (learners' progress points to it)`);
+  for (const ch of lock.glyphs || []) if (!current.glyphs.includes(ch)) err(`Published kanji "${ch}" was removed (learners' cards point to it)`);
   for (const id of lock.drills || []) if (!current.drills.includes(id)) err(`Published drill "${id}" was removed or renamed (learners' practice cards point to it)`);
   for (const [sid, lines] of Object.entries(lock.stories)) {
     const now = current.stories[sid];
@@ -196,6 +218,7 @@ if (updateLock) {
     letters: [...new Set([...prev.letters, ...current.letters])],
     lessons: [...new Set([...(prev.lessons || []), ...current.lessons])],
     drills: [...new Set([...(prev.drills || []), ...current.drills])],
+    glyphs: [...new Set([...(prev.glyphs || []), ...current.glyphs])],
     stories: { ...current.stories, ...Object.fromEntries(Object.entries(prev.stories).filter(([k]) => !current.stories[k])) },
   };
   writeFileSync(lockPath, `${JSON.stringify(merged, null, 1)}\n`);

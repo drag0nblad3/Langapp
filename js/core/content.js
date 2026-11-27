@@ -10,6 +10,8 @@ export let STORY_BY_ID = {};
 export let LESSON_LIST = [];
 export let LESSON_BY_ID = {};
 export let DRILL_BY_ID = {};
+export let GLYPHS = [];      // optional character deck (kanji): { char, en, on, kun, words }
+export let GLYPH_BY_CHAR = {};
 export let LETTER_GROUPS = [];
 export let LETTERS = []; // flat, in teaching order: { kana, answers, script, group, first }
 export let LETTER_BY_UNIT = {};
@@ -172,11 +174,39 @@ export function initContent(pack) {
   DRILL_BY_ID = Object.fromEntries(LESSON_LIST.flatMap((l) => l.drills.map((d) => [d.id, d])));
 
   EXAMPLE = {};
+  FORM_EXAMPLE = {};
   for (const s of STORY_LIST) {
     s.parsed.forEach((l, i) => {
-      for (const t of l.tokens) if (t.kind === 'word' && !EXAMPLE[t.id]) EXAMPLE[t.id] = { story: s.id, line: i };
+      for (const t of l.tokens) {
+        if (t.kind !== 'word') continue;
+        if (!EXAMPLE[t.id]) EXAMPLE[t.id] = { story: s.id, line: i };
+        const fk = `${t.id}:${t.form || ''}`;
+        if (t.form && !FORM_EXAMPLE[fk]) FORM_EXAMPLE[fk] = { story: s.id, line: i };
+      }
     });
   }
+
+  // Characters (kanji), each with the words that use it, in vocab order.
+  GLYPHS = (pack.glyphs?.items || []).map((g) => ({ ...g, words: WORDS.filter((w) => w.plain.includes(g.char)).map((w) => w.id) }));
+  GLYPH_BY_CHAR = Object.fromEntries(GLYPHS.map((g) => [g.char, g]));
+}
+
+let FORM_EXAMPLE = {};
+
+/** A story sentence that uses this exact form of a word. */
+export function formExample(wordId, form) {
+  const e = FORM_EXAMPLE[`${wordId}:${form}`];
+  return e ? STORY_BY_ID[e.story].parsed[e.line] : null;
+}
+
+/**
+ * Conjugated forms worth drilling: forms of verbs (and words the pack marks as
+ * inflecting) that differ from the dictionary form. { key, plain, reading, gloss }
+ */
+export function drillForms(word) {
+  if (!(PACK.conjugates || ['verb']).includes(word.pos)) return [];
+  return Object.entries(word.forms || {}).map(([key, gloss]) => ({ key, gloss, ...parseRuby(key) }))
+    .filter((f) => f.gloss && f.plain !== word.plain && f.reading !== word.reading);
 }
 
 /** First story sentence containing a word, for context on flashcards. */
